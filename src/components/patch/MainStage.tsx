@@ -19,7 +19,7 @@ interface MainStageProps {
 }
 
 const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit, onVibeChange }: MainStageProps) => {
-  const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, getActiveBlob } = useAudioEngine();
+  const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, getActiveBlob, generationPrompt } = useAudioEngine();
   const mainBlob = getActiveBlob(stems[0] ?? null as any);
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("stems");
@@ -173,6 +173,8 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit, onVib
                     <VibesView
                       onVibeChange={handleVibeChange}
                       disabled={stems.some(s => s.isRegenerating)}
+                      generationPrompt={generationPrompt}
+                      editCount={stems.reduce((acc, s) => acc + s.versions.length - 1, 0)}
                     />
                   </div>
                 </motion.div>
