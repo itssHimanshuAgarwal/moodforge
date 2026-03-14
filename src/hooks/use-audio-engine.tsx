@@ -404,6 +404,12 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       );
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ error: "Unknown error" }));
+        if (response.status === 429) {
+          throw new Error("Rate limit reached. Please wait a few seconds and try again.");
+        }
+        if (response.status === 401 || response.status === 402) {
+          throw new Error("Generation credits are exhausted. Please top up your ElevenLabs credits.");
+        }
         throw new Error(errData.error || `HTTP ${response.status}`);
       }
       const audioArrayBuf = await response.arrayBuffer();
