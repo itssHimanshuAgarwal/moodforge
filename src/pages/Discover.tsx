@@ -38,10 +38,6 @@ const DiscoverContent = () => {
   );
 };
 
-const Discover = () => (
-  <AudioEngineProvider>
-    <DiscoverContent />
-  </AudioEngineProvider>
-);
+const Discover = () => <DiscoverContent />;
 
 export default Discover;

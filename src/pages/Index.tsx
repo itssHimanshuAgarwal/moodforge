@@ -199,10 +199,6 @@ const IndexContent = () => {
   );
 };
 
-const Index = () => (
-  <AudioEngineProvider>
-    <IndexContent />
-  </AudioEngineProvider>
-);
+const Index = () => <IndexContent />;
 
 export default Index;
