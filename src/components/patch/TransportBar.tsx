@@ -1,18 +1,27 @@
-import { Play, Pause, SkipBack, SkipForward, Mic, Volume2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Mic, Volume2, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
+import SpeechBubble from "./SpeechBubble";
+import TextFeedback from "./TextFeedback";
+import type { VoiceState } from "@/lib/types";
 
 interface TransportBarProps {
-  isRecording: boolean;
-  onToggleRecording: () => void;
+  voiceState: VoiceState;
+  transcript: string | null;
+  onMicClick: () => void;
+  onTextSubmit: (text: string) => void;
 }
 
-const TransportBar = ({ isRecording, onToggleRecording }: TransportBarProps) => {
+const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: TransportBarProps) => {
   const {
     isLoaded, isPlaying, currentTime, duration,
     togglePlayPause, skipBack, skipForward,
   } = useAudioEngine();
+
+  const isRecording = voiceState === "recording";
+  const isProcessing = voiceState === "transcribing" || voiceState === "parsing";
+  const micBusy = isRecording || isProcessing;
 
   return (
     <footer className="h-28 border-t border-border bg-card/80 backdrop-blur-xl flex items-center px-8 relative shrink-0">
@@ -53,38 +62,50 @@ const TransportBar = ({ isRecording, onToggleRecording }: TransportBarProps) => 
         </div>
       </div>
 
-      {/* Center: The Mic */}
+      {/* Center: The Mic + Speech Bubble */}
       <div className="absolute left-1/2 -translate-x-1/2 -top-8 z-10">
-        <motion.button
-          onClick={onToggleRecording}
-          animate={isRecording ? { scale: [1, 1.06, 1] } : {}}
-          transition={isRecording ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : {}}
-          className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 relative ${
-            isRecording ? "bg-secondary glow-cyan" : "bg-primary glow-indigo"
-          }`}
-        >
-          <Mic
-            size={26}
-            className={`transition-colors duration-300 ${
-              isRecording ? "text-secondary-foreground" : "text-primary-foreground"
+        <div className="relative">
+          <SpeechBubble voiceState={voiceState} transcript={transcript} />
+          <motion.button
+            onClick={onMicClick}
+            animate={isRecording ? { scale: [1, 1.06, 1] } : {}}
+            transition={isRecording ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : {}}
+            className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 relative ${
+              isRecording
+                ? "bg-secondary glow-cyan"
+                : isProcessing
+                ? "bg-primary/80 glow-indigo"
+                : "bg-primary glow-indigo"
             }`}
-          />
-          {isRecording && (
-            <>
-              <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" />
-              <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" style={{ animationDelay: "0.5s" }} />
-              <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" style={{ animationDelay: "1s" }} />
-            </>
-          )}
-        </motion.button>
+          >
+            {isProcessing ? (
+              <Loader2 size={26} className="text-primary-foreground animate-spin" />
+            ) : (
+              <Mic
+                size={26}
+                className={`transition-colors duration-300 ${
+                  isRecording ? "text-secondary-foreground" : "text-primary-foreground"
+                }`}
+              />
+            )}
+            {isRecording && (
+              <>
+                <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" />
+                <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" style={{ animationDelay: "0.5s" }} />
+                <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" style={{ animationDelay: "1s" }} />
+              </>
+            )}
+          </motion.button>
+        </div>
       </div>
 
-      {/* Right: Controls */}
-      <div className="w-1/3 flex justify-end items-center gap-6">
+      {/* Right: Text input + A/B + Volume */}
+      <div className="w-1/3 flex justify-end items-center gap-4">
+        <TextFeedback onSubmit={onTextSubmit} disabled={micBusy} />
         <ABToggle disabled={true} />
         <div className="flex items-center gap-2.5 text-muted-foreground">
           <Volume2 size={15} />
-          <div className="w-20 h-1 bg-muted rounded-full relative">
+          <div className="w-16 h-1 bg-muted rounded-full relative">
             <div className="absolute inset-y-0 left-0 w-2/3 bg-primary rounded-full" />
           </div>
         </div>
