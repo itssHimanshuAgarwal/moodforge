@@ -256,23 +256,7 @@ const EmptyState = () => {
             You know the sound.
           </motion.h1>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut", delay: line2Delay }}
-            className="font-display mt-1"
-            style={{
-              fontSize: 52,
-              fontWeight: 600,
-              lineHeight: 1.1,
-              background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            You just can't say it.
-          </motion.h1>
+          <RotatingHeadline startDelay={line2Delay} />
 
           <motion.p
             initial={{ opacity: 0 }}
