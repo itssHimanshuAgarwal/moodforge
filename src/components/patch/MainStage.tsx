@@ -19,7 +19,7 @@ interface MainStageProps {
 }
 
 const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit, onVibeChange }: MainStageProps) => {
-  const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, getActiveBlob } = useAudioEngine();
+  const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, getActiveBlob, generationPrompt } = useAudioEngine();
   const mainBlob = getActiveBlob(stems[0] ?? null as any);
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("stems");
