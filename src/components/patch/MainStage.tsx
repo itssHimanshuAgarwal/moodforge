@@ -2,13 +2,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import StemLane from "./StemLane";
 import EmptyState from "./EmptyState";
 import WaveformDisplay from "./WaveformDisplay";
+import EditCard from "./EditCard";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
-import { useMemo } from "react";
+import type { EditIntent } from "@/lib/types";
 
-const MainStage = () => {
+interface MainStageProps {
+  editIntent: EditIntent | null;
+  editTranscript: string | null;
+  onApplyEdit: () => void;
+  onRetryEdit: () => void;
+}
+
+const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: MainStageProps) => {
   const { isLoaded, stems, currentTime, duration, isPlaying, seek } = useAudioEngine();
-
-  // Create a combined blob for the main waveform (use first stem as proxy)
   const mainBlob = stems[0]?.blob ?? null;
 
   return (
@@ -51,7 +57,6 @@ const MainStage = () => {
                   </div>
                 )}
               </div>
-              {/* Progress bar */}
               <div className="h-0.5 bg-muted/30 w-full">
                 <div
                   className="h-full bg-gradient-to-r from-primary to-secondary transition-[width] duration-75"
@@ -78,6 +83,18 @@ const MainStage = () => {
               ))}
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Card overlay */}
+      <AnimatePresence>
+        {editIntent && editTranscript && (
+          <EditCard
+            intent={editIntent}
+            transcript={editTranscript}
+            onApply={onApplyEdit}
+            onRetry={onRetryEdit}
+          />
         )}
       </AnimatePresence>
     </section>
