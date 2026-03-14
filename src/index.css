@@ -105,6 +105,7 @@
   /* Panel styling */
   .panel-surface {
     @apply bg-card border border-border backdrop-blur-xl;
+    border-color: rgba(255, 255, 255, 0.06);
   }
 
   /* Control button base */
@@ -112,6 +113,14 @@
     @apply w-6 h-6 flex items-center justify-center rounded text-[10px] font-bold
            bg-muted/50 text-muted-foreground border border-border
            hover:bg-muted hover:text-foreground transition-all duration-150;
+  }
+
+  /* Gradient text for branding */
+  .gradient-text-brand {
+    background: linear-gradient(135deg, hsl(187 82% 53%), hsl(271 91% 65%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 
@@ -141,8 +150,47 @@
   }
 }
 
+/* Noise texture overlay */
+.noise-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+@keyframes headerLineShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes glowRing {
+  0%, 100% { box-shadow: 0 0 8px rgba(34, 211, 238, 0.15), 0 0 16px rgba(34, 211, 238, 0.05); }
+  50% { box-shadow: 0 0 16px rgba(34, 211, 238, 0.3), 0 0 32px rgba(34, 211, 238, 0.1); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes micIdlePulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.1); }
+  50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.5), 0 0 60px rgba(99, 102, 241, 0.2); }
 }

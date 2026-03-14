@@ -21,6 +21,7 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
   const isRecording = voiceState === "recording";
   const isProcessing = voiceState === "transcribing" || voiceState === "parsing";
   const micBusy = isRecording || isProcessing;
+  const isIdle = voiceState === "idle" || voiceState === "done" || voiceState === "error";
 
   return (
     <footer className="h-28 border-t border-border bg-card/80 backdrop-blur-xl flex items-center px-8 relative shrink-0">
@@ -29,7 +30,7 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
         <div className="flex items-center gap-1.5">
           <button
             onClick={skipBack}
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
+            className="p-2 text-muted-foreground hover:text-foreground hover:brightness-125 transition-all duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
             disabled={!isLoaded}
           >
             <SkipBack size={18} />
@@ -37,7 +38,7 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
           <button
             onClick={togglePlayPause}
             disabled={!isLoaded}
-            className="w-10 h-10 flex items-center justify-center bg-foreground text-background rounded-full hover:scale-105 transition-transform duration-150 disabled:opacity-25 disabled:hover:scale-100 disabled:cursor-not-allowed"
+            className="w-10 h-10 flex items-center justify-center bg-foreground text-background rounded-full hover:scale-105 hover:brightness-110 transition-all duration-150 disabled:opacity-25 disabled:hover:scale-100 disabled:cursor-not-allowed"
           >
             {isPlaying ? (
               <Pause size={18} fill="currentColor" />
@@ -47,7 +48,7 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
           </button>
           <button
             onClick={skipForward}
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
+            className="p-2 text-muted-foreground hover:text-foreground hover:brightness-125 transition-all duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
             disabled={!isLoaded}
           >
             <SkipForward size={18} />
@@ -69,19 +70,20 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
             onClick={onMicClick}
             animate={isRecording ? { scale: [1, 1.06, 1] } : {}}
             transition={isRecording ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : {}}
-            className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 relative ${
+            className={`w-[68px] h-[68px] rounded-full flex items-center justify-center transition-all duration-500 relative ${
               isRecording
                 ? "bg-secondary glow-cyan"
                 : isProcessing
                 ? "bg-primary/80 glow-indigo"
-                : "bg-primary glow-indigo"
+                : "bg-primary"
             }`}
+            style={isIdle && !isProcessing ? { animation: "micIdlePulse 3s ease-in-out infinite" } : {}}
           >
             {isProcessing ? (
-              <Loader2 size={26} className="text-primary-foreground animate-spin" />
+              <Loader2 size={28} className="text-primary-foreground animate-spin" />
             ) : (
               <Mic
-                size={26}
+                size={28}
                 className={`transition-colors duration-300 ${
                   isRecording ? "text-secondary-foreground" : "text-primary-foreground"
                 }`}
