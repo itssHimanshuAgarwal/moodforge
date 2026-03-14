@@ -14,7 +14,7 @@ import {
 import type { StemVersion } from "@/lib/types";
 import { AudioEngineContext } from "./audio-engine-context";
 import type { AudioEngineContextValue } from "./audio-engine-context";
-import { saveSession, loadSession, type StoredSession } from "@/lib/session-store";
+import { saveSession, loadSession, clearSession, type StoredSession } from "@/lib/session-store";
 
 const MAX_VERSIONS = 10;
 
@@ -159,92 +159,100 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     saveSession({ generationPrompt: prompt, stems: storedStems, savedAt: Date.now() });
   }, []);
 
-  // Restore session from IndexedDB on mount
+  // Check if a saved session exists (without loading it)
+  const [hasSavedSession, setHasSavedSession] = useState(false);
+  const [savedSessionPrompt, setSavedSessionPrompt] = useState<string | null>(null);
+
   useEffect(() => {
     if (hasRestoredRef.current) return;
     hasRestoredRef.current = true;
-
     (async () => {
-      console.log("[Session] Checking for saved session...");
       const session = await loadSession();
-      if (!session || !session.stems.length) {
-        console.log("[Session] No saved session found");
-        return;
-      }
-
-      console.log("[Session] Found saved session, restoring...");
-      setIsLoading(true);
-      try {
-        // Create AudioContext but DON'T require resume — browsers block it without user gesture.
-        // Audio decoding works even while suspended in most browsers.
-        const ctx = getAudioContext();
-        // Don't await resume — just try it, it will auto-resume on first user interaction (play)
-        ctx.resume().catch(() => {
-          console.log("[Session] AudioContext suspended (will resume on user interaction)");
-        });
-
-        const restoredStems: StemState[] = [];
-        for (const stored of session.stems) {
-          let gainNode = gainNodesRef.current.get(stored.id);
-          if (!gainNode) {
-            gainNode = ctx.createGain();
-            gainNode.connect(ctx.destination);
-            gainNodesRef.current.set(stored.id, gainNode);
-          }
-
-          const versions: StemVersion[] = [];
-          for (const sv of stored.versions) {
-            try {
-              const arrayBuf = await sv.blob.arrayBuffer();
-              // decodeAudioData works even with suspended AudioContext
-              const buffer = await ctx.decodeAudioData(arrayBuf);
-              versions.push({
-                id: sv.id,
-                versionNumber: sv.versionNumber,
-                label: sv.label,
-                buffer,
-                blob: sv.blob,
-                prompt: sv.prompt,
-                userFeedback: sv.userFeedback,
-                timestamp: sv.timestamp,
-              });
-            } catch (decodeErr) {
-              console.warn(`[Session] Failed to decode version ${sv.id}:`, decodeErr);
-            }
-          }
-
-          if (versions.length > 0) {
-            restoredStems.push({
-              id: stored.id,
-              label: stored.label,
-              color: stored.color,
-              bgClass: stored.bgClass,
-              isSolo: false,
-              isMuted: false,
-              isLocked: false,
-              versions,
-              activeVersionIndex: Math.min(stored.activeVersionIndex, versions.length - 1),
-              isRegenerating: false,
-            });
-          }
-        }
-
-        if (restoredStems.length && restoredStems[0].versions.length) {
-          setStems(restoredStems);
-          setDuration(restoredStems[0].versions[restoredStems[0].activeVersionIndex]?.buffer?.duration || 0);
-          setCurrentTime(0);
-          offsetRef.current = 0;
-          setGenerationPrompt(session.generationPrompt);
-          setIsLoaded(true);
-          console.log(`[Session] Restored ${restoredStems.length} stems from IndexedDB`);
-        }
-      } catch (err) {
-        console.warn("[Session] Failed to restore session:", err);
-      } finally {
-        setIsLoading(false);
+      if (session && session.stems.length > 0) {
+        setHasSavedSession(true);
+        setSavedSessionPrompt(session.generationPrompt);
+        console.log("[Session] Found saved session available for restore");
       }
     })();
+  }, []);
+
+  // Manually restore session when user clicks "Resume"
+  const restoreSession = useCallback(async () => {
+    const session = await loadSession();
+    if (!session || !session.stems.length) return;
+
+    setIsLoading(true);
+    try {
+      const ctx = getAudioContext();
+      ctx.resume().catch(() => {});
+
+      const restoredStems: StemState[] = [];
+      for (const stored of session.stems) {
+        let gainNode = gainNodesRef.current.get(stored.id);
+        if (!gainNode) {
+          gainNode = ctx.createGain();
+          gainNode.connect(ctx.destination);
+          gainNodesRef.current.set(stored.id, gainNode);
+        }
+
+        const versions: StemVersion[] = [];
+        for (const sv of stored.versions) {
+          try {
+            const arrayBuf = await sv.blob.arrayBuffer();
+            const buffer = await ctx.decodeAudioData(arrayBuf);
+            versions.push({
+              id: sv.id,
+              versionNumber: sv.versionNumber,
+              label: sv.label,
+              buffer,
+              blob: sv.blob,
+              prompt: sv.prompt,
+              userFeedback: sv.userFeedback,
+              timestamp: sv.timestamp,
+            });
+          } catch (decodeErr) {
+            console.warn(`[Session] Failed to decode version ${sv.id}:`, decodeErr);
+          }
+        }
+
+        if (versions.length > 0) {
+          restoredStems.push({
+            id: stored.id,
+            label: stored.label,
+            color: stored.color,
+            bgClass: stored.bgClass,
+            isSolo: false,
+            isMuted: false,
+            isLocked: false,
+            versions,
+            activeVersionIndex: Math.min(stored.activeVersionIndex, versions.length - 1),
+            isRegenerating: false,
+          });
+        }
+      }
+
+      if (restoredStems.length && restoredStems[0].versions.length) {
+        setStems(restoredStems);
+        setDuration(restoredStems[0].versions[restoredStems[0].activeVersionIndex]?.buffer?.duration || 0);
+        setCurrentTime(0);
+        offsetRef.current = 0;
+        setGenerationPrompt(session.generationPrompt);
+        setIsLoaded(true);
+        console.log(`[Session] Restored ${restoredStems.length} stems`);
+      }
+    } catch (err) {
+      console.warn("[Session] Failed to restore session:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [getAudioContext]);
+
+  // Clear saved session
+  const clearSavedSession = useCallback(async () => {
+    await clearSession();
+    setHasSavedSession(false);
+    setSavedSessionPrompt(null);
+  }, []);
 
   // Auto-save session to IndexedDB when stems change
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -560,8 +568,9 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     <AudioEngineContext.Provider
       value={{
         isLoaded, isPlaying, isLoading, currentTime, duration, stems,
-        generationPrompt,
+        generationPrompt, hasSavedSession, savedSessionPrompt,
         loadDemo, loadFromBlob, generateTrack, regenerateStem,
+        restoreSession, clearSavedSession,
         play, pause, togglePlayPause, seek, skipForward, skipBack,
         toggleSolo, toggleMute, toggleLock,
         selectVersion, resetAllVersions,

@@ -1,4 +1,4 @@
-import { Plus, Loader2, Sparkles } from "lucide-react";
+import { Plus, Loader2, Sparkles, History } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +6,7 @@ import { useAudioEngine } from "@/hooks/use-audio-engine";
 import GenerateModal from "./GenerateModal";
 
 const EmptyState = () => {
-  const { loadDemo, isLoading } = useAudioEngine();
+  const { loadDemo, isLoading, hasSavedSession, savedSessionPrompt, restoreSession } = useAudioEngine();
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
@@ -28,20 +28,21 @@ const EmptyState = () => {
           }}
         />
 
-        <div className="relative w-full max-w-md border-2 border-dashed border-foreground/10 rounded-xl p-12 flex flex-col items-center text-center">
-          <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-5 border border-primary/20">
+        <div className="relative w-full max-w-md border-2 border-dashed border-foreground/10 rounded-xl p-12 flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-2 border border-primary/20">
             {isLoading ? (
               <Loader2 className="text-primary animate-spin" size={28} />
             ) : (
               <Plus className="text-primary" size={28} />
             )}
           </div>
-          <h2 className="text-section text-foreground mb-1.5">
+          <h2 className="text-section text-foreground mb-0.5">
             Ready for surgery.
           </h2>
-          <p className="text-body text-muted-foreground max-w-xs mb-6">
+          <p className="text-body text-muted-foreground max-w-xs mb-3">
             Generate a track or drop an audio file to start editing.
           </p>
+
           <button
             onClick={() => setShowModal(true)}
             disabled={isLoading}
@@ -60,13 +61,30 @@ const EmptyState = () => {
             <span>Discover Vibes</span>
           </button>
 
-          <p className="text-[11px] text-muted-foreground/60 mt-3">
+          {/* Resume last session */}
+          {hasSavedSession && (
+            <motion.button
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              onClick={restoreSession}
+              disabled={isLoading}
+              className="group flex items-center gap-2 px-5 py-2.5 border border-accent/30 text-accent-foreground text-body font-medium rounded-full hover:scale-105 hover:bg-accent/10 transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+            >
+              <History size={14} />
+              <span className="truncate max-w-[200px]">
+                Resume: {savedSessionPrompt ? `"${savedSessionPrompt.slice(0, 30)}${savedSessionPrompt.length > 30 ? '…' : ''}"` : "Last Session"}
+              </span>
+            </motion.button>
+          )}
+
+          <p className="text-[11px] text-muted-foreground/60 mt-1">
             or drag and drop an audio file
           </p>
           <button
             onClick={loadDemo}
             disabled={isLoading}
-            className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground mt-2 underline underline-offset-2 transition-colors duration-150 disabled:opacity-30"
+            className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground underline underline-offset-2 transition-colors duration-150 disabled:opacity-30"
           >
             Load Demo
           </button>

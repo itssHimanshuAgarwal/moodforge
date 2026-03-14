@@ -10,11 +10,15 @@ export interface AudioEngineContextValue {
   duration: number;
   stems: StemState[];
   generationPrompt: string | null;
+  hasSavedSession: boolean;
+  savedSessionPrompt: string | null;
 
   loadDemo: () => Promise<void>;
   loadFromBlob: (blob: Blob, label?: string) => Promise<void>;
   generateTrack: (prompt: string) => Promise<void>;
   regenerateStem: (stemId: string, prompt: string, userFeedback?: string) => Promise<number>;
+  restoreSession: () => Promise<void>;
+  clearSavedSession: () => Promise<void>;
   play: () => void;
   pause: () => void;
   togglePlayPause: () => void;
