@@ -5,7 +5,7 @@ import { useAudioEngine } from "@/hooks/use-audio-engine";
 import { toast } from "@/hooks/use-toast";
 
 const DiscoverContent = () => {
-  const { generateTrack } = useAudioEngine();
+  const { generateTrack, generationProgress } = useAudioEngine();
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
 
