@@ -103,12 +103,18 @@ const StemLane = ({ stemId, isEditTarget = false }: StemLaneProps) => {
           )}
         </div>
 
-        {/* Lock + version count */}
+        {/* Lock + version count + edited badge */}
         <div className="flex items-center gap-1.5">
           {hasMultipleVersions && (
-            <span className="text-[9px] text-muted-foreground/60 font-mono">
-              {stem.versions.length}v
-            </span>
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
+              style={{ backgroundColor: `${stem.color}20`, color: stem.color }}
+            >
+              <Sparkles size={9} />
+              <span>edited · v{stem.versions[stem.activeVersionIndex]?.versionNumber}</span>
+            </motion.div>
           )}
           <button
             onClick={() => toggleLock(stem.id)}
