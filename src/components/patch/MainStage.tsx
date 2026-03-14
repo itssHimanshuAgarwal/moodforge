@@ -1,37 +1,15 @@
-import { Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo } from "react";
 import StemLane from "./StemLane";
 import EmptyState from "./EmptyState";
+import WaveformDisplay from "./WaveformDisplay";
+import { useAudioEngine } from "@/hooks/use-audio-engine";
+import { useMemo } from "react";
 
-interface MainStageProps {
-  isLoaded: boolean;
-  onGenerate: () => void;
-}
+const MainStage = () => {
+  const { isLoaded, stems, currentTime, duration, isPlaying, seek } = useAudioEngine();
 
-const stems = [
-  { label: "Drums", color: "#3b82f6", bgClass: "stem-bg-drums" },
-  { label: "Bass", color: "#a855f7", bgClass: "stem-bg-bass" },
-  { label: "Melody", color: "#22c55e", bgClass: "stem-bg-melody" },
-  { label: "Harmony", color: "#f59e0b", bgClass: "stem-bg-harmony" },
-  { label: "Vocals", color: "#ef4444", bgClass: "stem-bg-vocals" },
-];
-
-const MainStage = ({ isLoaded, onGenerate }: MainStageProps) => {
-  // Global waveform bars
-  const globalBars = useMemo(() => {
-    const count = 200;
-    return Array.from({ length: count }, (_, i) => {
-      const x = i / count;
-      const h =
-        Math.sin(x * Math.PI) * 0.5 +
-        Math.sin(x * 5.7) * 0.25 +
-        Math.sin(x * 11.3) * 0.1 +
-        Math.cos(x * 17) * 0.08 +
-        0.07;
-      return Math.max(0.04, Math.min(1, h));
-    });
-  }, []);
+  // Create a combined blob for the main waveform (use first stem as proxy)
+  const mainBlob = stems[0]?.blob ?? null;
 
   return (
     <section
@@ -43,7 +21,7 @@ const MainStage = ({ isLoaded, onGenerate }: MainStageProps) => {
     >
       <AnimatePresence mode="wait">
         {!isLoaded ? (
-          <EmptyState key="empty" onGenerate={onGenerate} />
+          <EmptyState key="empty" />
         ) : (
           <motion.div
             key="loaded"
@@ -52,41 +30,47 @@ const MainStage = ({ isLoaded, onGenerate }: MainStageProps) => {
             transition={{ duration: 0.4 }}
             className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-8 gap-4"
           >
-            {/* Global waveform */}
-            <div className="h-28 w-full panel-surface rounded-lg relative overflow-hidden shrink-0">
-              <div className="absolute inset-0 flex items-center justify-center gap-[1px] px-4 py-3">
-                {globalBars.map((h, i) => {
-                  const centerDist = Math.abs(i / globalBars.length - 0.5) * 2;
-                  const opacity = 0.15 + (1 - centerDist) * 0.25;
-                  return (
-                    <div
-                      key={i}
-                      className="flex-1 min-w-[1px] rounded-[0.5px] bg-primary"
-                      style={{
-                        height: `${h * 100}%`,
-                        opacity,
-                      }}
-                    />
-                  );
-                })}
+            {/* Main waveform */}
+            <div className="w-full panel-surface rounded-lg relative overflow-hidden shrink-0">
+              <div className="px-4 pt-3 pb-1">
+                {mainBlob ? (
+                  <WaveformDisplay
+                    blob={mainBlob}
+                    color="#6366f1"
+                    progressColor="#22d3ee"
+                    height={80}
+                    currentTime={currentTime}
+                    duration={duration}
+                    isPlaying={isPlaying}
+                    onSeek={seek}
+                    opacity={0.7}
+                  />
+                ) : (
+                  <div className="h-20 flex items-center justify-center">
+                    <span className="text-meta text-muted-foreground/40">Loading waveform…</span>
+                  </div>
+                )}
               </div>
-              <div className="absolute bottom-2.5 left-4 text-meta text-muted-foreground/50">
-                Full Mix
+              {/* Progress bar */}
+              <div className="h-0.5 bg-muted/30 w-full">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-secondary transition-[width] duration-75"
+                  style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%" }}
+                />
               </div>
-              <div className="absolute bottom-2.5 right-4 text-mono text-muted-foreground/40">
-                03:24
+              <div className="flex justify-between px-4 py-1.5">
+                <span className="text-meta text-muted-foreground/50">Full Mix</span>
+                <span className="text-mono text-muted-foreground/40">
+                  {formatTime(duration)}
+                </span>
               </div>
             </div>
 
             {/* Stem lanes */}
             <div className="flex flex-col gap-4">
               {stems.map((stem, i) => (
-                <div key={stem.label}>
-                  <StemLane
-                    label={stem.label}
-                    color={stem.color}
-                    bgClass={stem.bgClass}
-                  />
+                <div key={stem.id}>
+                  <StemLane stemId={stem.id} />
                   {i < stems.length - 1 && (
                     <div className="h-px bg-border/30 mt-4" />
                   )}
@@ -99,5 +83,11 @@ const MainStage = ({ isLoaded, onGenerate }: MainStageProps) => {
     </section>
   );
 };
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
 
 export default MainStage;

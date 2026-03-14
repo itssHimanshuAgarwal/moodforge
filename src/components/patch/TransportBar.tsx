@@ -1,15 +1,18 @@
 import { Play, Pause, SkipBack, SkipForward, Mic, Volume2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useAudioEngine } from "@/hooks/use-audio-engine";
 
 interface TransportBarProps {
   isRecording: boolean;
   onToggleRecording: () => void;
-  hasTrack: boolean;
 }
 
-const TransportBar = ({ isRecording, onToggleRecording, hasTrack }: TransportBarProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+const TransportBar = ({ isRecording, onToggleRecording }: TransportBarProps) => {
+  const {
+    isLoaded, isPlaying, currentTime, duration,
+    togglePlayPause, skipBack, skipForward,
+  } = useAudioEngine();
 
   return (
     <footer className="h-28 border-t border-border bg-card/80 backdrop-blur-xl flex items-center px-8 relative shrink-0">
@@ -17,14 +20,15 @@ const TransportBar = ({ isRecording, onToggleRecording, hasTrack }: TransportBar
       <div className="flex items-center gap-5 w-1/3">
         <div className="flex items-center gap-1.5">
           <button
+            onClick={skipBack}
             className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
-            disabled={!hasTrack}
+            disabled={!isLoaded}
           >
             <SkipBack size={18} />
           </button>
           <button
-            onClick={() => hasTrack && setIsPlaying(!isPlaying)}
-            disabled={!hasTrack}
+            onClick={togglePlayPause}
+            disabled={!isLoaded}
             className="w-10 h-10 flex items-center justify-center bg-foreground text-background rounded-full hover:scale-105 transition-transform duration-150 disabled:opacity-25 disabled:hover:scale-100 disabled:cursor-not-allowed"
           >
             {isPlaying ? (
@@ -34,27 +38,29 @@ const TransportBar = ({ isRecording, onToggleRecording, hasTrack }: TransportBar
             )}
           </button>
           <button
+            onClick={skipForward}
             className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
-            disabled={!hasTrack}
+            disabled={!isLoaded}
           >
             <SkipForward size={18} />
           </button>
         </div>
         <div className="text-timecode text-[22px] text-foreground">
-          00:00<span className="text-muted-foreground">.00</span>
+          {formatTime(currentTime)}
+          <span className="text-muted-foreground text-[16px] ml-0.5">
+            / {formatTime(duration)}
+          </span>
         </div>
       </div>
 
-      {/* Center: The Mic — 64px diameter */}
+      {/* Center: The Mic */}
       <div className="absolute left-1/2 -translate-x-1/2 -top-8 z-10">
         <motion.button
           onClick={onToggleRecording}
           animate={isRecording ? { scale: [1, 1.06, 1] } : {}}
           transition={isRecording ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : {}}
           className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 relative ${
-            isRecording
-              ? "bg-secondary glow-cyan"
-              : "bg-primary glow-indigo"
+            isRecording ? "bg-secondary glow-cyan" : "bg-primary glow-indigo"
           }`}
         >
           <Mic
@@ -63,7 +69,6 @@ const TransportBar = ({ isRecording, onToggleRecording, hasTrack }: TransportBar
               isRecording ? "text-secondary-foreground" : "text-primary-foreground"
             }`}
           />
-          {/* Pulse rings when recording */}
           {isRecording && (
             <>
               <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" />
@@ -76,15 +81,11 @@ const TransportBar = ({ isRecording, onToggleRecording, hasTrack }: TransportBar
 
       {/* Right: Controls */}
       <div className="w-1/3 flex justify-end items-center gap-6">
-        {/* A/B Toggle */}
         <ABToggle disabled={true} />
-
-        {/* Volume */}
         <div className="flex items-center gap-2.5 text-muted-foreground">
           <Volume2 size={15} />
           <div className="w-20 h-1 bg-muted rounded-full relative">
             <div className="absolute inset-y-0 left-0 w-2/3 bg-primary rounded-full" />
-            <div className="absolute top-1/2 -translate-y-1/2 left-[66%] w-2.5 h-2.5 bg-foreground rounded-full opacity-0 hover:opacity-100 transition-opacity duration-150" />
           </div>
         </div>
       </div>
@@ -97,14 +98,11 @@ const ABToggle = ({ disabled }: { disabled: boolean }) => {
 
   return (
     <div className={`flex flex-col items-center gap-1 ${disabled ? "opacity-30 pointer-events-none" : ""}`}>
-      <span className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider">
-        Compare
-      </span>
+      <span className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider">Compare</span>
       <button
         onClick={() => !disabled && setIsEdited(!isEdited)}
         className="relative w-[88px] h-6 bg-muted/60 rounded-full border border-border flex items-center p-0.5 transition-colors duration-150"
       >
-        {/* Sliding pill */}
         <div
           className={`absolute h-5 w-[42px] rounded-full transition-all duration-200 ease-out ${
             isEdited
@@ -122,5 +120,11 @@ const ABToggle = ({ disabled }: { disabled: boolean }) => {
     </div>
   );
 };
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
 
 export default TransportBar;
