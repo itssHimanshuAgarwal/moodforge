@@ -16,8 +16,8 @@ interface MainStageProps {
 }
 
 const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: MainStageProps) => {
-  const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, abMode } = useAudioEngine();
-  const mainBlob = stems[0]?.blob ?? null;
+  const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, getActiveBlob } = useAudioEngine();
+  const mainBlob = getActiveBlob(stems[0] ?? null as any);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
@@ -37,8 +37,12 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
     }
   }, [loadFromBlob]);
 
-  // Get the active blob for the main waveform display
-  const displayBlob = abMode === "edited" && stems[0]?.editedBlob ? stems[0].editedBlob : mainBlob;
+  // Version summary bar
+  const versionSummary = stems.filter(s => s.versions.length > 0).map(s => {
+    const v = s.versions[s.activeVersionIndex];
+    return `${s.label} v${v?.versionNumber ?? 1}`;
+  });
+  const hasMultipleVersionsAnywhere = stems.some(s => s.versions.length > 1);
 
   return (
     <section
@@ -75,12 +79,24 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
             transition={{ duration: 0.4 }}
             className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-8 gap-4"
           >
+            {/* Version summary bar */}
+            {hasMultipleVersionsAnywhere && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted/30 border border-border/50">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Playing:</span>
+                {versionSummary.map((text, i) => (
+                  <span key={i} className="text-[10px] font-mono text-foreground/60">
+                    {text}{i < versionSummary.length - 1 && <span className="text-muted-foreground/40 mx-1">·</span>}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Main waveform */}
             <div className="w-full panel-surface rounded-lg relative overflow-hidden shrink-0">
               <div className="px-4 pt-3 pb-1">
-                {displayBlob ? (
+                {mainBlob ? (
                   <WaveformDisplay
-                    blob={displayBlob}
+                    blob={mainBlob}
                     color="#6366f1"
                     progressColor="#22d3ee"
                     height={80}

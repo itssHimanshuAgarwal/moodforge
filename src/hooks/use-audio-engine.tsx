@@ -41,7 +41,7 @@ interface AudioEngineContextValue {
   loadDemo: () => Promise<void>;
   loadFromBlob: (blob: Blob, label?: string) => Promise<void>;
   generateTrack: (prompt: string) => Promise<void>;
-  regenerateStem: (stemId: string, prompt: string, userFeedback?: string) => Promise<void>;
+  regenerateStem: (stemId: string, prompt: string, userFeedback?: string) => Promise<number>;
   play: () => void;
   pause: () => void;
   togglePlayPause: () => void;
