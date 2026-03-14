@@ -153,6 +153,7 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
             transcript={editTranscript}
             onApply={onApplyEdit}
             onRetry={onRetryEdit}
+            isRegenerating={stems.some(s => s.isRegenerating)}
           />
         )}
       </AnimatePresence>
