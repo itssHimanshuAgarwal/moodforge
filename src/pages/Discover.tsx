@@ -33,6 +33,7 @@ const DiscoverContent = () => {
       <MoodForgeExplorer
         onGenerateWithPrompt={handleGenerate}
         isGenerating={isGenerating}
+        generationProgress={generationProgress}
       />
     </div>
   );
