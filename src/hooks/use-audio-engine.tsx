@@ -334,7 +334,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ prompt, duration_seconds: 30 }),
+          body: JSON.stringify({ prompt, duration_seconds: 30, stem_type: stemId }),
         }
       );
       if (!response.ok) {
