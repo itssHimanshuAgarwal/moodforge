@@ -1,1 +1,4 @@
 project_id = "ldehlfjbyxsqmbecvcxi"
+
+[functions.parse-intent]
+verify_jwt = false
