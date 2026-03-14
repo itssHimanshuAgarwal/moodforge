@@ -13,7 +13,9 @@ export interface AudioEngineContextValue {
   generationPrompt: string | null;
   hasSavedSession: boolean;
   savedSessionPrompt: string | null;
+  demoMode: boolean;
 
+  setDemoMode: (on: boolean) => void;
   loadDemo: () => Promise<void>;
   loadFromBlob: (blob: Blob, label?: string) => Promise<void>;
   generateTrack: (prompt: string) => Promise<void>;
