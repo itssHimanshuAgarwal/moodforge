@@ -17,8 +17,8 @@ import type { AudioEngineContextValue } from "./audio-engine-context";
 import { saveSession, loadSession, clearSession, type StoredSession } from "@/lib/session-store";
 
 const MAX_VERSIONS = 10;
-const STEM_RETRY_DELAYS_MS = [1500, 3000, 5000];
-const STEM_DELAY_BETWEEN_MS = 1000;
+const STEM_RETRY_DELAYS_MS = [2000, 5000, 10000];
+const STEM_DELAY_BETWEEN_MS = 3000;
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export interface StemState {
@@ -44,6 +44,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [generationPrompt, setGenerationPrompt] = useState<string | null>(null);
@@ -361,15 +362,19 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
 
       // Generate stems ONE AT A TIME to respect ElevenLabs concurrency limit
       for (let i = 0; i < STEM_CONFIGS.length; i++) {
+        const config = STEM_CONFIGS[i];
+        setGenerationProgress(`Generating ${config.label} (${i + 1}/${STEM_CONFIGS.length})...`);
         if (i > 0) await wait(STEM_DELAY_BETWEEN_MS);
-        const result = await fetchStem(STEM_CONFIGS[i]);
+        const result = await fetchStem(config);
         stemResults.push(result);
       }
 
+      setGenerationProgress(null);
       setupStems(stemResults);
       setGenerationPrompt(prompt);
     } catch (err) {
       console.error("Track generation failed:", err);
+      setGenerationProgress(null);
       throw err;
     } finally {
       setIsLoading(false);
@@ -607,7 +612,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     <AudioEngineContext.Provider
       value={{
         isLoaded, isPlaying, isLoading, currentTime, duration, stems,
-        generationPrompt, hasSavedSession, savedSessionPrompt,
+        generationPrompt, generationProgress, hasSavedSession, savedSessionPrompt,
         loadDemo, loadFromBlob, generateTrack, regenerateStem,
         restoreSession, clearSavedSession,
         play, pause, togglePlayPause, seek, skipForward, skipBack,

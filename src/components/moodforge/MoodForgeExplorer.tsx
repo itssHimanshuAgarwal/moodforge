@@ -19,9 +19,10 @@ import { toast } from "@/hooks/use-toast";
 interface MoodForgeExplorerProps {
   onGenerateWithPrompt: (prompt: string) => void;
   isGenerating?: boolean;
+  generationProgress?: string | null;
 }
 
-export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }: MoodForgeExplorerProps) {
+export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating, generationProgress }: MoodForgeExplorerProps) {
   const [cursorValues, setCursorValues] = useState<Record<GemsKey, number>>(
     () => Object.fromEntries(GEMS_KEYS.map(k => [k, 0.5])) as Record<GemsKey, number>
   );
@@ -267,7 +268,7 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
             >
               <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               <span className="relative flex items-center gap-2">
-                {isGenerating ? "Generating..." : "Generate Track"}
+                {isGenerating ? (generationProgress || "Generating...") : "Generate Track"}
                 {!isGenerating && <ArrowRight size={14} />}
               </span>
             </button>

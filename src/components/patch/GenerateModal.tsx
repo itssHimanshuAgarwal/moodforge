@@ -16,7 +16,7 @@ const phaseMessages = [
 ];
 
 const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
-  const { generateTrack } = useAudioEngine();
+  const { generateTrack, generationProgress } = useAudioEngine();
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [phase, setPhase] = useState(0);
@@ -135,7 +135,7 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
                     </motion.span>
                   </AnimatePresence>
                   <span className="text-[11px] text-muted-foreground/50">
-                    This usually takes 10–30 seconds
+                    {generationProgress || "This usually takes 2–3 minutes"}
                   </span>
                 </div>
               ) : (

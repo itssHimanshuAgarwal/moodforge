@@ -6,6 +6,7 @@ export interface AudioEngineContextValue {
   isLoaded: boolean;
   isPlaying: boolean;
   isLoading: boolean;
+  generationProgress: string | null;
   currentTime: number;
   duration: number;
   stems: StemState[];
