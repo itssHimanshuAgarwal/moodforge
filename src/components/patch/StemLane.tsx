@@ -1,90 +1,100 @@
 import { Lock, Unlock } from "lucide-react";
-import { useMemo, useState } from "react";
+import WaveformDisplay from "./WaveformDisplay";
+import { useAudioEngine } from "@/hooks/use-audio-engine";
 
 interface StemLaneProps {
-  label: string;
-  color: string;
-  bgClass: string;
+  stemId: string;
 }
 
-const StemLane = ({ label, color, bgClass }: StemLaneProps) => {
-  const [isLocked, setIsLocked] = useState(false);
-  const [isSolo, setIsSolo] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+const StemLane = ({ stemId }: StemLaneProps) => {
+  const {
+    stems, currentTime, duration, isPlaying,
+    toggleSolo, toggleMute, toggleLock, seek,
+  } = useAudioEngine();
 
-  const bars = useMemo(() => {
-    const count = 140;
-    return Array.from({ length: count }, (_, i) => {
-      const x = i / count;
-      const h =
-        Math.sin(x * Math.PI) * 0.55 +
-        Math.sin(x * 7.3) * 0.2 +
-        Math.sin(x * 13.7) * 0.12 +
-        Math.cos(x * 21) * 0.08 +
-        0.08;
-      return Math.max(0.06, Math.min(1, h));
-    });
-  }, []);
+  const stem = stems.find((s) => s.id === stemId);
+  if (!stem) return null;
+
+  const anySolo = stems.some((s) => s.isSolo);
+  const isAudible = anySolo ? stem.isSolo : !stem.isMuted;
+  const dimmed = !isAudible;
 
   return (
-    <div className="h-12 w-full group flex gap-3 items-center">
+    <div
+      className={`h-12 w-full group flex gap-3 items-center transition-opacity duration-200 ${
+        dimmed ? "opacity-30" : "opacity-100"
+      }`}
+    >
       {/* Label + controls */}
       <div className="w-28 shrink-0 flex items-center gap-2">
         <span
           className="text-[11px] font-mono font-medium uppercase tracking-wider w-14 truncate"
-          style={{ color }}
+          style={{ color: stem.color }}
         >
-          {label}
+          {stem.label}
         </span>
         <div className="flex gap-1">
           <button
-            onClick={() => setIsSolo(!isSolo)}
-            className={`ctrl-btn ${isSolo ? "!bg-primary/20 !text-primary !border-primary/30" : ""}`}
+            onClick={() => toggleSolo(stem.id)}
+            className={`ctrl-btn ${
+              stem.isSolo
+                ? "!bg-primary/20 !text-primary !border-primary/30"
+                : ""
+            }`}
           >
             S
           </button>
           <button
-            onClick={() => setIsMuted(!isMuted)}
-            className={`ctrl-btn ${isMuted ? "!bg-destructive/20 !text-destructive !border-destructive/30" : ""}`}
+            onClick={() => toggleMute(stem.id)}
+            className={`ctrl-btn ${
+              stem.isMuted
+                ? "!bg-destructive/20 !text-destructive !border-destructive/30"
+                : ""
+            }`}
           >
             M
           </button>
         </div>
       </div>
 
-      {/* Waveform area */}
+      {/* Waveform */}
       <div
-        className={`flex-1 h-full rounded-md border border-border relative overflow-hidden ${bgClass} group-hover:brightness-125 transition-all duration-150`}
+        className={`flex-1 h-full rounded-md border border-border relative overflow-hidden ${stem.bgClass} group-hover:brightness-125 transition-all duration-150`}
       >
-        <div className="absolute inset-0 flex items-end justify-center gap-[1px] px-1.5 py-1.5">
-          {bars.map((h, i) => (
-            <div
-              key={i}
-              className={`flex-1 min-w-[1px] rounded-[0.5px] transition-opacity duration-150 ${
-                isMuted ? "opacity-15" : "opacity-35 group-hover:opacity-50"
-              }`}
-              style={{
-                height: `${h * 100}%`,
-                backgroundColor: color,
-              }}
-            />
-          ))}
-        </div>
+        {stem.blob ? (
+          <WaveformDisplay
+            blob={stem.blob}
+            color={stem.color}
+            height={48}
+            currentTime={currentTime}
+            duration={duration}
+            isPlaying={isPlaying}
+            onSeek={seek}
+            opacity={dimmed ? 0.3 : 0.6}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[10px] text-muted-foreground/30">No data</span>
+          </div>
+        )}
       </div>
 
       {/* Lock */}
       <button
-        onClick={() => setIsLocked(!isLocked)}
+        onClick={() => toggleLock(stem.id)}
         className="p-1 transition-colors duration-150"
       >
-        {isLocked ? (
+        {stem.isLocked ? (
           <Lock
             size={13}
             className="text-patch-harmony"
             style={{ filter: "drop-shadow(0 0 4px rgba(245, 158, 11, 0.3))" }}
           />
         ) : (
-          <Unlock size={13} className="text-muted-foreground/30 hover:text-muted-foreground transition-colors duration-150" />
+          <Unlock
+            size={13}
+            className="text-muted-foreground/30 hover:text-muted-foreground transition-colors duration-150"
+          />
         )}
       </button>
     </div>
