@@ -44,6 +44,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [generationPrompt, setGenerationPrompt] = useState<string | null>(null);
