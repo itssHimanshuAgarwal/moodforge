@@ -9,7 +9,7 @@ interface StemLaneProps {
   isEditTarget?: boolean;
 }
 
-const StemLane = ({ stemId }: StemLaneProps) => {
+const StemLane = ({ stemId, isEditTarget = false }: StemLaneProps) => {
   const {
     stems, currentTime, duration, isPlaying,
     toggleSolo, toggleMute, toggleLock, seek, selectVersion,
