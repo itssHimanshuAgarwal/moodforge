@@ -1,12 +1,14 @@
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
 import GenerateModal from "./GenerateModal";
 
 const EmptyState = () => {
   const { loadDemo, isLoading } = useAudioEngine();
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
