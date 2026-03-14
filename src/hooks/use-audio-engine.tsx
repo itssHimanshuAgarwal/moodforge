@@ -17,6 +17,9 @@ import type { AudioEngineContextValue } from "./audio-engine-context";
 import { saveSession, loadSession, clearSession, type StoredSession } from "@/lib/session-store";
 
 const MAX_VERSIONS = 10;
+const STEM_GENERATION_CONCURRENCY = 2;
+const STEM_RETRY_DELAYS_MS = [500, 1200];
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export interface StemState {
   id: string;
