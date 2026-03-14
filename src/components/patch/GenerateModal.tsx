@@ -135,7 +135,7 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
                     </motion.span>
                   </AnimatePresence>
                   <span className="text-[11px] text-muted-foreground/50">
-                    This usually takes 10–30 seconds
+                    {generationProgress || "This usually takes 2–3 minutes"}
                   </span>
                 </div>
               ) : (
