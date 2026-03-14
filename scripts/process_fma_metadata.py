@@ -173,13 +173,13 @@ def build_track_records(tracks_df: pd.DataFrame, features_df: pd.DataFrame, subs
                 "title": title[:200],
                 "artist": artist[:200],
                 "genre": genre[:100],
-                "tempo": 120.0,  # default, features.csv has this but complex to extract
+                "tempo": 120.0,
                 "key": "C",
                 "mode": "major",
                 "valence": round(gems["joyful_activation"] - gems["gems_sadness"], 3),
                 "arousal": round(gems["power"] * 0.5 + gems["tension"] * 0.5, 3),
                 "prompt_fragment": prompt_fragment[:500],
-                **gems,
+                "gems": gems,  # nested for edge function
             }
             records.append(record)
         except Exception as e:
