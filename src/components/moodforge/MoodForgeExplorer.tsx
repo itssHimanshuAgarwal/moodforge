@@ -3,7 +3,7 @@
  * Users explore emotions visually, find matching reference tracks,
  * then generate a prompt to feed into the Generate Track pipeline.
  */
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Copy, Check, ArrowRight, RotateCcw } from "lucide-react";
 import MoodRadar from "./MoodRadar";
@@ -13,6 +13,7 @@ import {
   SAMPLE_TRACKS, buildPromptFromGems,
   type GemsKey, type GemsTrack,
 } from "@/lib/gems-data";
+import { playTrackPreview, stopPreview } from "@/lib/track-preview-synth";
 import { toast } from "@/hooks/use-toast";
 
 interface MoodForgeExplorerProps {
@@ -27,6 +28,8 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
   const [userDescription, setUserDescription] = useState("");
   const [copied, setCopied] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const lastPlayedTrackRef = useRef<string | null>(null);
 
   const handleChange = useCallback((key: GemsKey, value: number) => {
     setHasInteracted(true);
@@ -51,6 +54,35 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
     }
     return { nearestTrack: best, distance: bestDist };
   }, [cursorValues]);
+
+  // Auto-play preview when nearest track changes
+  useEffect(() => {
+    if (!hasInteracted || !nearestTrack) return;
+    if (lastPlayedTrackRef.current === nearestTrack.id) return;
+    lastPlayedTrackRef.current = nearestTrack.id;
+    setIsPreviewPlaying(true);
+    playTrackPreview(nearestTrack);
+    // Preview lasts ~8 beats, auto-stop state
+    const beatDur = 60 / (nearestTrack.tempo || 100);
+    const timeout = setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
+    return () => clearTimeout(timeout);
+  }, [nearestTrack?.id, hasInteracted]);
+
+  // Cleanup on unmount
+  useEffect(() => () => stopPreview(), []);
+
+  const handlePlayPreview = useCallback(() => {
+    if (!nearestTrack) return;
+    if (isPreviewPlaying) {
+      stopPreview();
+      setIsPreviewPlaying(false);
+    } else {
+      setIsPreviewPlaying(true);
+      playTrackPreview(nearestTrack);
+      const beatDur = 60 / (nearestTrack.tempo || 100);
+      setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
+    }
+  }, [nearestTrack, isPreviewPlaying]);
 
   const generatedPrompt = useMemo(
     () => buildPromptFromGems(cursorValues, nearestTrack, userDescription),
@@ -142,7 +174,12 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
                 Nearest Match
               </span>
             </div>
-            <TrackMatch track={hasInteracted ? nearestTrack : null} distance={distance} />
+            <TrackMatch
+              track={hasInteracted ? nearestTrack : null}
+              distance={distance}
+              isPlaying={isPreviewPlaying}
+              onTogglePlay={handlePlayPreview}
+            />
           </div>
 
           {/* Description input */}
