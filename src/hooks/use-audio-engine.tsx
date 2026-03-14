@@ -272,39 +272,43 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     if (ctx.state === "suspended") await ctx.resume();
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-music`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ prompt, duration_seconds: 30 }),
-        }
+      // Generate each stem individually with stem-specific prompts
+      const stemResults = await Promise.all(
+        STEM_CONFIGS.map(async (config) => {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-music`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({ prompt, duration_seconds: 30, stem_type: config.id }),
+            }
+          );
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({ error: "Unknown error" }));
+            throw new Error(errData.error || `HTTP ${response.status}`);
+          }
+
+          const audioArrayBuf = await response.arrayBuffer();
+          const blob = new Blob([audioArrayBuf], { type: "audio/mpeg" });
+          const buffer = await ctx.decodeAudioData(audioArrayBuf.slice(0));
+
+          return {
+            id: config.id,
+            label: config.label,
+            color: config.color,
+            bgClass: config.bgClass,
+            buffer,
+            blob,
+          };
+        })
       );
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errData.error || `HTTP ${response.status}`);
-      }
-
-      const audioArrayBuf = await response.arrayBuffer();
-      const fullBlob = new Blob([audioArrayBuf], { type: "audio/mpeg" });
-      const fullBuffer = await ctx.decodeAudioData(audioArrayBuf.slice(0));
-
-      // Create stem placeholders from the full mix buffer
-      const stemData = STEM_CONFIGS.map((config) => ({
-        id: config.id,
-        label: config.label,
-        color: config.color,
-        bgClass: config.bgClass,
-        buffer: fullBuffer,
-        blob: fullBlob,
-      }));
-
-      setupStems(stemData);
+      setupStems(stemResults);
       setGenerationPrompt(prompt);
     } catch (err) {
       console.error("Track generation failed:", err);
