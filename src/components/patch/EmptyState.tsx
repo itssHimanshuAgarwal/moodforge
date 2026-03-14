@@ -1,12 +1,14 @@
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
 import GenerateModal from "./GenerateModal";
 
 const EmptyState = () => {
   const { loadDemo, isLoading } = useAudioEngine();
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -48,6 +50,16 @@ const EmptyState = () => {
             <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             <span className="relative">Generate Track</span>
           </button>
+
+          <button
+            onClick={() => navigate("/discover")}
+            disabled={isLoading}
+            className="group flex items-center gap-2 px-5 py-2.5 border border-primary/30 text-primary text-body font-semibold rounded-full hover:scale-105 hover:bg-primary/5 transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+          >
+            <Sparkles size={14} />
+            <span>Discover Vibes</span>
+          </button>
+
           <p className="text-[11px] text-muted-foreground/60 mt-3">
             or drag and drop an audio file
           </p>
