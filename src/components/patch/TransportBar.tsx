@@ -12,79 +12,114 @@ const TransportBar = ({ isRecording, onToggleRecording, hasTrack }: TransportBar
   const [isPlaying, setIsPlaying] = useState(false);
 
   return (
-    <footer className="h-28 border-t border-border bg-card flex items-center px-8 relative shrink-0">
+    <footer className="h-28 border-t border-border bg-card/80 backdrop-blur-xl flex items-center px-8 relative shrink-0">
       {/* Left: Transport */}
-      <div className="flex items-center gap-6 w-1/3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-5 w-1/3">
+        <div className="flex items-center gap-1.5">
           <button
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-30"
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
             disabled={!hasTrack}
           >
-            <SkipBack size={20} />
+            <SkipBack size={18} />
           </button>
           <button
-            onClick={() => setIsPlaying(!isPlaying)}
+            onClick={() => hasTrack && setIsPlaying(!isPlaying)}
             disabled={!hasTrack}
-            className="w-12 h-12 flex items-center justify-center bg-foreground text-background rounded-full hover:scale-105 transition-transform duration-150 disabled:opacity-30 disabled:hover:scale-100"
+            className="w-10 h-10 flex items-center justify-center bg-foreground text-background rounded-full hover:scale-105 transition-transform duration-150 disabled:opacity-25 disabled:hover:scale-100 disabled:cursor-not-allowed"
           >
             {isPlaying ? (
-              <Pause size={24} fill="currentColor" />
+              <Pause size={18} fill="currentColor" />
             ) : (
-              <Play size={24} fill="currentColor" />
+              <Play size={18} fill="currentColor" className="ml-0.5" />
             )}
           </button>
           <button
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-30"
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
             disabled={!hasTrack}
           >
-            <SkipForward size={20} />
+            <SkipForward size={18} />
           </button>
         </div>
-        <div className="font-mono text-2xl tracking-tighter text-foreground">
+        <div className="text-timecode text-[22px] text-foreground">
           00:00<span className="text-muted-foreground">.00</span>
         </div>
       </div>
 
-      {/* Center: The Mic */}
-      <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-10">
+      {/* Center: The Mic — 64px diameter */}
+      <div className="absolute left-1/2 -translate-x-1/2 -top-8 z-10">
         <motion.button
           onClick={onToggleRecording}
-          animate={isRecording ? { scale: [1, 1.08, 1] } : {}}
+          animate={isRecording ? { scale: [1, 1.06, 1] } : {}}
           transition={isRecording ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : {}}
-          className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-colors duration-500 relative ${
+          className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 relative ${
             isRecording
-              ? "bg-secondary shadow-secondary/40"
-              : "bg-primary shadow-primary/40"
+              ? "bg-secondary glow-cyan"
+              : "bg-primary glow-indigo"
           }`}
         >
           <Mic
-            size={32}
-            className={isRecording ? "text-secondary-foreground" : "text-primary-foreground"}
+            size={26}
+            className={`transition-colors duration-300 ${
+              isRecording ? "text-secondary-foreground" : "text-primary-foreground"
+            }`}
           />
+          {/* Pulse rings when recording */}
           {isRecording && (
-            <div className="absolute inset-0 rounded-full border-4 border-secondary animate-pulse-ring" />
+            <>
+              <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" />
+              <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" style={{ animationDelay: "0.5s" }} />
+              <span className="absolute inset-0 rounded-full border-2 border-secondary animate-pulse-ring" style={{ animationDelay: "1s" }} />
+            </>
           )}
         </motion.button>
       </div>
 
       {/* Right: Controls */}
-      <div className="w-1/3 flex justify-end items-center gap-8">
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter">
-            A/B Compare
-          </span>
-          <button className="w-12 h-6 bg-muted rounded-full relative p-1 cursor-not-allowed opacity-50">
-            <div className="w-4 h-4 bg-muted-foreground/40 rounded-full" />
-          </button>
-        </div>
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Volume2 size={18} />
-          <div className="w-24 h-1 bg-muted rounded-full relative">
+      <div className="w-1/3 flex justify-end items-center gap-6">
+        {/* A/B Toggle */}
+        <ABToggle disabled={true} />
+
+        {/* Volume */}
+        <div className="flex items-center gap-2.5 text-muted-foreground">
+          <Volume2 size={15} />
+          <div className="w-20 h-1 bg-muted rounded-full relative">
             <div className="absolute inset-y-0 left-0 w-2/3 bg-primary rounded-full" />
+            <div className="absolute top-1/2 -translate-y-1/2 left-[66%] w-2.5 h-2.5 bg-foreground rounded-full opacity-0 hover:opacity-100 transition-opacity duration-150" />
           </div>
         </div>
       </div>
     </footer>
+  );
+};
+
+const ABToggle = ({ disabled }: { disabled: boolean }) => {
+  const [isEdited, setIsEdited] = useState(false);
+
+  return (
+    <div className={`flex flex-col items-center gap-1 ${disabled ? "opacity-30 pointer-events-none" : ""}`}>
+      <span className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider">
+        Compare
+      </span>
+      <button
+        onClick={() => !disabled && setIsEdited(!isEdited)}
+        className="relative w-[88px] h-6 bg-muted/60 rounded-full border border-border flex items-center p-0.5 transition-colors duration-150"
+      >
+        {/* Sliding pill */}
+        <div
+          className={`absolute h-5 w-[42px] rounded-full transition-all duration-200 ease-out ${
+            isEdited
+              ? "left-[44px] bg-secondary/20 border border-secondary/30"
+              : "left-0.5 bg-primary/20 border border-primary/30"
+          }`}
+        />
+        <span className={`relative z-10 flex-1 text-center text-[9px] font-bold uppercase tracking-tight transition-colors duration-150 ${!isEdited ? "text-primary" : "text-muted-foreground/60"}`}>
+          Orig
+        </span>
+        <span className={`relative z-10 flex-1 text-center text-[9px] font-bold uppercase tracking-tight transition-colors duration-150 ${isEdited ? "text-secondary" : "text-muted-foreground/60"}`}>
+          Edit
+        </span>
+      </button>
+    </div>
   );
 };
 

@@ -17,7 +17,7 @@
     --popover-foreground: 215 20% 85%;
 
     --primary: 239 84% 67%;
-    --primary-foreground: 240 20% 3.5%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 187 82% 53%;
     --secondary-foreground: 240 20% 3.5%;
@@ -31,8 +31,8 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 0 0% 100% / 0.05;
-    --input: 0 0% 100% / 0.05;
+    --border: 0 0% 100% / 0.06;
+    --input: 0 0% 100% / 0.06;
     --ring: 239 84% 67%;
 
     --radius: 0.375rem;
@@ -47,13 +47,18 @@
     --patch-harmony: 38 92% 50%;
     --patch-vocals: 0 84% 60%;
 
+    /* Glow shadows */
+    --glow-indigo: 0 0 30px rgba(99, 102, 241, 0.3);
+    --glow-cyan: 0 0 30px rgba(34, 211, 238, 0.4);
+    --glow-indigo-intense: 0 0 40px rgba(99, 102, 241, 0.5), 0 0 80px rgba(99, 102, 241, 0.15);
+
     --sidebar-background: 240 18% 7%;
     --sidebar-foreground: 215 20% 85%;
     --sidebar-primary: 239 84% 67%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 10% 14%;
     --sidebar-accent-foreground: 215 20% 85%;
-    --sidebar-border: 0 0% 100% / 0.05;
+    --sidebar-border: 0 0% 100% / 0.06;
     --sidebar-ring: 239 84% 67%;
   }
 }
@@ -64,6 +69,49 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv05", "cv11";
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  /* Typography scale */
+  .text-meta {
+    @apply text-[11px] font-medium leading-tight tracking-wider uppercase;
+  }
+  .text-body {
+    @apply text-[13px] font-medium leading-normal;
+  }
+  .text-section {
+    @apply text-[15px] font-semibold leading-snug;
+  }
+  .text-title {
+    @apply text-[20px] font-bold leading-none tracking-tighter;
+  }
+  .text-mono {
+    @apply font-mono text-[11px] font-normal tabular-nums;
+  }
+  .text-timecode {
+    @apply font-mono font-normal tabular-nums tracking-tighter;
+  }
+
+  /* Stem color backgrounds at 5% */
+  .stem-bg-drums { background-color: rgba(59, 130, 246, 0.05); }
+  .stem-bg-bass { background-color: rgba(168, 85, 247, 0.05); }
+  .stem-bg-melody { background-color: rgba(34, 197, 94, 0.05); }
+  .stem-bg-harmony { background-color: rgba(245, 158, 11, 0.05); }
+  .stem-bg-vocals { background-color: rgba(239, 68, 68, 0.05); }
+
+  /* Panel styling */
+  .panel-surface {
+    @apply bg-card border border-border backdrop-blur-xl;
+  }
+
+  /* Control button base */
+  .ctrl-btn {
+    @apply w-6 h-6 flex items-center justify-center rounded text-[10px] font-bold
+           bg-muted/50 text-muted-foreground border border-border
+           hover:bg-muted hover:text-foreground transition-all duration-150;
   }
 }
 
@@ -80,5 +128,15 @@
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
+  }
+
+  .glow-indigo {
+    box-shadow: var(--glow-indigo);
+  }
+  .glow-cyan {
+    box-shadow: var(--glow-cyan);
+  }
+  .glow-indigo-intense {
+    box-shadow: var(--glow-indigo-intense);
   }
 }
