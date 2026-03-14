@@ -14,7 +14,7 @@ import {
 import type { StemVersion } from "@/lib/types";
 import { AudioEngineContext } from "./audio-engine-context";
 import type { AudioEngineContextValue } from "./audio-engine-context";
-import { saveSession, loadSession, type StoredSession } from "@/lib/session-store";
+import { saveSession, loadSession, clearSession, type StoredSession } from "@/lib/session-store";
 
 const MAX_VERSIONS = 10;
 
