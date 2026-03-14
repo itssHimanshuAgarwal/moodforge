@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
 import SpeechBubble from "./SpeechBubble";
 import TextFeedback from "./TextFeedback";
-import type { VoiceState, ABMode } from "@/lib/types";
+import type { VoiceState } from "@/lib/types";
 
 interface TransportBarProps {
   voiceState: VoiceState;
@@ -16,7 +16,6 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
   const {
     isLoaded, isPlaying, currentTime, duration,
     togglePlayPause, skipBack, skipForward,
-    abMode, setABMode, hasEdits,
   } = useAudioEngine();
 
   const isRecording = voiceState === "recording";
@@ -102,7 +101,6 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
       {/* Right */}
       <div className="w-1/3 flex justify-end items-center gap-4">
         <TextFeedback onSubmit={onTextSubmit} disabled={micBusy} />
-        <ABToggle disabled={!hasEdits} mode={abMode} onChange={setABMode} />
         <div className="flex items-center gap-2.5 text-muted-foreground">
           <Volume2 size={15} />
           <div className="w-16 h-1 bg-muted rounded-full relative">
@@ -111,42 +109,6 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
         </div>
       </div>
     </footer>
-  );
-};
-
-const ABToggle = ({
-  disabled,
-  mode,
-  onChange,
-}: {
-  disabled: boolean;
-  mode: ABMode;
-  onChange: (mode: ABMode) => void;
-}) => {
-  const isEdited = mode === "edited";
-
-  return (
-    <div className={`flex flex-col items-center gap-1 transition-opacity duration-200 ${disabled ? "opacity-30 pointer-events-none" : ""}`}>
-      <span className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider">Compare</span>
-      <button
-        onClick={() => onChange(isEdited ? "original" : "edited")}
-        className="relative w-[88px] h-6 bg-muted/60 rounded-full border border-border flex items-center p-0.5 transition-colors duration-150"
-      >
-        <div
-          className={`absolute h-5 w-[42px] rounded-full transition-all duration-200 ease-out ${
-            isEdited
-              ? "left-[44px] bg-secondary/20 border border-secondary/30"
-              : "left-0.5 bg-primary/20 border border-primary/30"
-          }`}
-        />
-        <span className={`relative z-10 flex-1 text-center text-[9px] font-bold uppercase tracking-tight transition-colors duration-150 ${!isEdited ? "text-primary" : "text-muted-foreground/60"}`}>
-          Orig
-        </span>
-        <span className={`relative z-10 flex-1 text-center text-[9px] font-bold uppercase tracking-tight transition-colors duration-150 ${isEdited ? "text-secondary" : "text-muted-foreground/60"}`}>
-          Edit
-        </span>
-      </button>
-    </div>
   );
 };
 

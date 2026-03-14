@@ -10,7 +10,7 @@ import { STEM_COLOR_MAP } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 
 const IndexContent = () => {
-  const { isLoaded, regenerateStem, generationPrompt, stems } = useAudioEngine();
+  const { isLoaded, regenerateStem, generationPrompt, stems, selectVersion, resetAllVersions } = useAudioEngine();
   const {
     voiceState, transcript, intent,
     startRecording, stopRecording, submitText, reset,
@@ -43,7 +43,6 @@ const IndexContent = () => {
     const now = new Date();
     const timeStr = now.toTimeString().slice(0, 8);
 
-    // Build regeneration prompt
     const targetStemId = intent.target_stem === "full_mix"
       ? stems[0]?.id || "full_mix"
       : intent.target_stem;
@@ -56,7 +55,10 @@ const IndexContent = () => {
       `for the ${stemInfo.label.toLowerCase()} part`,
     ].join(", ");
 
-    // Add to history as pending
+    // Determine version number for this stem
+    const targetStem = stems.find(s => s.id === targetStemId);
+    const nextVersion = (targetStem?.versions.length ?? 0) + 1;
+
     const entry: EditHistoryItem = {
       id: `edit-${Date.now()}`,
       time: timeStr,
@@ -64,18 +66,18 @@ const IndexContent = () => {
       action: intent.action,
       stemColor: stemInfo.color,
       stemName: stemInfo.label,
+      stemId: targetStemId,
+      versionNumber: nextVersion,
       status: "pending",
       intent,
     };
     setHistory((prev) => [entry, ...prev]);
 
-    // Trigger stem regeneration
     setIsRegenerating(true);
     try {
-      await regenerateStem(targetStemId, regenPrompt);
-      // Update history entry to applied
+      const actualVersion = await regenerateStem(targetStemId, regenPrompt, transcript);
       setHistory((prev) =>
-        prev.map((h) => h.id === entry.id ? { ...h, status: "applied" } : h)
+        prev.map((h) => h.id === entry.id ? { ...h, status: "applied", versionNumber: actualVersion } : h)
       );
       reset();
     } catch (err) {
@@ -85,7 +87,6 @@ const IndexContent = () => {
         description: err instanceof Error ? err.message : "Try again.",
         variant: "destructive",
       });
-      // Update history entry to reverted
       setHistory((prev) =>
         prev.map((h) => h.id === entry.id ? { ...h, status: "reverted" } : h)
       );
@@ -97,6 +98,18 @@ const IndexContent = () => {
   const handleRetryEdit = useCallback(() => {
     reset();
   }, [reset]);
+
+  const handleRevert = useCallback((entry: EditHistoryItem) => {
+    // Go back to previous version for this stem
+    const stem = stems.find(s => s.id === entry.stemId);
+    if (stem && stem.activeVersionIndex > 0) {
+      selectVersion(entry.stemId, stem.activeVersionIndex - 1);
+    }
+  }, [stems, selectVersion]);
+
+  const handleResetAll = useCallback(() => {
+    resetAllVersions();
+  }, [resetAllVersions]);
 
   const showIntent = voiceState === "done" ? intent : null;
   const showTranscript = voiceState === "done" ? transcript : null;
@@ -114,7 +127,12 @@ const IndexContent = () => {
           />
         </div>
         <div className="w-[30%]">
-          <HistoryPanel hasTrack={isLoaded} history={history} />
+          <HistoryPanel
+            hasTrack={isLoaded}
+            history={history}
+            onRevert={handleRevert}
+            onResetAll={handleResetAll}
+          />
         </div>
       </main>
       <TransportBar

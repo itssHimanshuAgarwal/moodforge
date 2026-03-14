@@ -12,7 +12,9 @@ import {
   generateDemoBuffer,
   audioBufferToBlob,
 } from "@/lib/audio-generator";
-import type { ABMode } from "@/lib/types";
+import type { StemVersion } from "@/lib/types";
+
+const MAX_VERSIONS = 10;
 
 export interface StemState {
   id: string;
@@ -22,10 +24,8 @@ export interface StemState {
   isSolo: boolean;
   isMuted: boolean;
   isLocked: boolean;
-  buffer: AudioBuffer | null;
-  blob: Blob | null;
-  editedBuffer: AudioBuffer | null;
-  editedBlob: Blob | null;
+  versions: StemVersion[];
+  activeVersionIndex: number;
   isRegenerating: boolean;
 }
 
@@ -36,14 +36,12 @@ interface AudioEngineContextValue {
   currentTime: number;
   duration: number;
   stems: StemState[];
-  abMode: ABMode;
-  hasEdits: boolean;
   generationPrompt: string | null;
 
   loadDemo: () => Promise<void>;
   loadFromBlob: (blob: Blob, label?: string) => Promise<void>;
   generateTrack: (prompt: string) => Promise<void>;
-  regenerateStem: (stemId: string, prompt: string) => Promise<void>;
+  regenerateStem: (stemId: string, prompt: string, userFeedback?: string) => Promise<number>;
   play: () => void;
   pause: () => void;
   togglePlayPause: () => void;
@@ -53,7 +51,10 @@ interface AudioEngineContextValue {
   toggleSolo: (stemId: string) => void;
   toggleMute: (stemId: string) => void;
   toggleLock: (stemId: string) => void;
-  setABMode: (mode: ABMode) => void;
+  selectVersion: (stemId: string, versionIndex: number) => void;
+  resetAllVersions: () => void;
+  getActiveBuffer: (stem: StemState) => AudioBuffer | null;
+  getActiveBlob: (stem: StemState) => Blob | null;
 }
 
 const AudioEngineContext = createContext<AudioEngineContextValue | null>(null);
@@ -70,7 +71,6 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [abMode, setABMode] = useState<ABMode>("original");
   const [generationPrompt, setGenerationPrompt] = useState<string | null>(null);
   const [stems, setStems] = useState<StemState[]>(
     STEM_CONFIGS.map((c) => ({
@@ -81,10 +81,8 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       isSolo: false,
       isMuted: false,
       isLocked: false,
-      buffer: null,
-      blob: null,
-      editedBuffer: null,
-      editedBlob: null,
+      versions: [],
+      activeVersionIndex: 0,
       isRegenerating: false,
     }))
   );
@@ -95,8 +93,6 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
   const animFrameRef = useRef(0);
-
-  const hasEdits = stems.some((s) => s.editedBuffer !== null);
 
   const getAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -120,7 +116,16 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Helper to set up stems from a list of {id, label, color, bgClass, buffer, blob}
+  const getActiveBuffer = useCallback((stem: StemState): AudioBuffer | null => {
+    if (stem.versions.length === 0) return null;
+    return stem.versions[stem.activeVersionIndex]?.buffer ?? null;
+  }, []);
+
+  const getActiveBlob = useCallback((stem: StemState): Blob | null => {
+    if (stem.versions.length === 0) return null;
+    return stem.versions[stem.activeVersionIndex]?.blob ?? null;
+  }, []);
+
   const setupStems = useCallback((stemData: Array<{
     id: string; label: string; color: string; bgClass: string;
     buffer: AudioBuffer; blob: Blob;
@@ -133,18 +138,28 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         gainNode.connect(ctx.destination);
         gainNodesRef.current.set(s.id, gainNode);
       }
+      const originalVersion: StemVersion = {
+        id: `${s.id}-v1`,
+        versionNumber: 1,
+        label: "Original",
+        buffer: s.buffer,
+        blob: s.blob,
+        prompt: "",
+        userFeedback: null,
+        timestamp: Date.now(),
+      };
       return {
         ...s,
         isSolo: false,
         isMuted: false,
         isLocked: false,
-        editedBuffer: null,
-        editedBlob: null,
+        versions: [originalVersion],
+        activeVersionIndex: 0,
         isRegenerating: false,
       };
     });
     setStems(newStems);
-    setDuration(newStems[0]?.buffer?.duration || 0);
+    setDuration(newStems[0]?.versions[0]?.buffer?.duration || 0);
     setCurrentTime(0);
     offsetRef.current = 0;
     setIsLoaded(true);
@@ -154,16 +169,11 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
-
     const stemData = STEM_CONFIGS.map((config) => {
       const buffer = generateDemoBuffer(ctx, config);
       const blob = audioBufferToBlob(buffer);
-      return {
-        id: config.id, label: config.label, color: config.color, bgClass: config.bgClass,
-        buffer, blob,
-      };
+      return { id: config.id, label: config.label, color: config.color, bgClass: config.bgClass, buffer, blob };
     });
-
     setupStems(stemData);
     setGenerationPrompt("Demo: synthetic tones");
     setIsLoading(false);
@@ -173,18 +183,9 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
-
     const arrayBuf = await fileBlob.arrayBuffer();
     const audioBuffer = await ctx.decodeAudioData(arrayBuf);
-
-    setupStems([{
-      id: "full_mix",
-      label,
-      color: "#6366f1",
-      bgClass: "stem-bg-drums",
-      buffer: audioBuffer,
-      blob: fileBlob,
-    }]);
+    setupStems([{ id: "full_mix", label, color: "#6366f1", bgClass: "stem-bg-drums", buffer: audioBuffer, blob: fileBlob }]);
     setGenerationPrompt(null);
     setIsLoading(false);
   }, [getAudioContext, setupStems]);
@@ -193,9 +194,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
-
     try {
-      // Call edge function — returns binary audio
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-music`,
         {
@@ -208,25 +207,14 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ prompt, duration_seconds: 30 }),
         }
       );
-
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errData.error || `HTTP ${response.status}`);
       }
-
       const audioArrayBuf = await response.arrayBuffer();
       const audioBlob = new Blob([audioArrayBuf], { type: "audio/mpeg" });
       const audioBuffer = await ctx.decodeAudioData(audioArrayBuf.slice(0));
-
-      // Load as single full mix stem
-      setupStems([{
-        id: "full_mix",
-        label: "Full Mix",
-        color: "#6366f1",
-        bgClass: "stem-bg-drums",
-        buffer: audioBuffer,
-        blob: audioBlob,
-      }]);
+      setupStems([{ id: "full_mix", label: "Full Mix", color: "#6366f1", bgClass: "stem-bg-drums", buffer: audioBuffer, blob: audioBlob }]);
       setGenerationPrompt(prompt);
     } catch (err) {
       console.error("Track generation failed:", err);
@@ -236,15 +224,12 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     }
   }, [getAudioContext, setupStems]);
 
-  const regenerateStem = useCallback(async (stemId: string, prompt: string) => {
-    // Mark stem as regenerating
+  const regenerateStem = useCallback(async (stemId: string, prompt: string, userFeedback?: string) => {
     setStems((prev) =>
       prev.map((s) => s.id === stemId ? { ...s, isRegenerating: true } : s)
     );
-
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
-
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-music`,
@@ -258,26 +243,41 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ prompt, duration_seconds: 30 }),
         }
       );
-
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errData.error || `HTTP ${response.status}`);
       }
-
       const audioArrayBuf = await response.arrayBuffer();
       const editedBlob = new Blob([audioArrayBuf], { type: "audio/mpeg" });
       const editedBuffer = await ctx.decodeAudioData(audioArrayBuf.slice(0));
 
+      let newVersionNumber = 1;
       setStems((prev) =>
-        prev.map((s) =>
-          s.id === stemId
-            ? { ...s, editedBuffer, editedBlob, isRegenerating: false }
-            : s
-        )
+        prev.map((s) => {
+          if (s.id !== stemId) return s;
+          const truncatedLabel = (userFeedback || prompt).slice(0, 30);
+          newVersionNumber = s.versions.length + 1;
+          const newVersion: StemVersion = {
+            id: `${stemId}-v${newVersionNumber}`,
+            versionNumber: newVersionNumber,
+            label: truncatedLabel,
+            buffer: editedBuffer,
+            blob: editedBlob,
+            prompt,
+            userFeedback: userFeedback || null,
+            timestamp: Date.now(),
+          };
+          const versions = [...s.versions, newVersion].slice(-MAX_VERSIONS);
+          return {
+            ...s,
+            versions,
+            activeVersionIndex: versions.length - 1,
+            isRegenerating: false,
+          };
+        })
       );
 
-      // Auto-switch to edited mode
-      setABMode("edited");
+      return newVersionNumber;
     } catch (err) {
       console.error("Stem regeneration failed:", err);
       setStems((prev) =>
@@ -287,23 +287,43 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     }
   }, [getAudioContext]);
 
-  // Get the active buffer for a stem based on A/B mode
-  const getActiveBuffer = useCallback((stem: StemState) => {
-    if (abMode === "edited" && stem.editedBuffer) return stem.editedBuffer;
-    return stem.buffer;
-  }, [abMode]);
+  const selectVersion = useCallback((stemId: string, versionIndex: number) => {
+    const wasPlaying = isPlaying;
+    // Stop current sources
+    sourceNodesRef.current.forEach((src) => { try { src.stop(); } catch {} });
+    sourceNodesRef.current.clear();
 
-  const getActiveBlob = useCallback((stem: StemState) => {
-    if (abMode === "edited" && stem.editedBlob) return stem.editedBlob;
-    return stem.blob;
-  }, [abMode]);
+    setStems((prev) =>
+      prev.map((s) =>
+        s.id === stemId ? { ...s, activeVersionIndex: versionIndex } : s
+      )
+    );
+
+    // Will restart playback in effect if needed
+    if (wasPlaying) {
+      // Use a small timeout to let state update
+      setTimeout(() => {
+        const ctx = audioCtxRef.current;
+        if (ctx) {
+          const elapsed = ctx.currentTime - startTimeRef.current;
+          const currentOffset = offsetRef.current + elapsed;
+          offsetRef.current = currentOffset;
+          // startSources will be called by the play effect
+        }
+      }, 0);
+    }
+  }, [isPlaying]);
+
+  const resetAllVersions = useCallback(() => {
+    setStems((prev) =>
+      prev.map((s) => ({ ...s, activeVersionIndex: 0 }))
+    );
+  }, []);
 
   const startSources = useCallback(
     (offset: number) => {
       const ctx = getAudioContext();
-      sourceNodesRef.current.forEach((src) => {
-        try { src.stop(); } catch {}
-      });
+      sourceNodesRef.current.forEach((src) => { try { src.stop(); } catch {} });
       sourceNodesRef.current.clear();
 
       stems.forEach((stem) => {
@@ -323,7 +343,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     [getAudioContext, stems, getActiveBuffer]
   );
 
-  // Re-start sources when A/B mode changes during playback
+  // Re-start sources when version selection changes during playback
   useEffect(() => {
     if (isPlaying) {
       const ctx = audioCtxRef.current;
@@ -333,14 +353,13 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         startSources(currentOffset);
       }
     }
-  }, [abMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stems.map(s => s.activeVersionIndex).join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isPlaying) {
       cancelAnimationFrame(animFrameRef.current);
       return;
     }
-
     const tick = () => {
       const ctx = audioCtxRef.current;
       if (!ctx) return;
@@ -350,16 +369,13 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
         setIsPlaying(false);
         setCurrentTime(0);
         offsetRef.current = 0;
-        sourceNodesRef.current.forEach((src) => {
-          try { src.stop(); } catch {}
-        });
+        sourceNodesRef.current.forEach((src) => { try { src.stop(); } catch {} });
         sourceNodesRef.current.clear();
         return;
       }
       setCurrentTime(newTime);
       animFrameRef.current = requestAnimationFrame(tick);
     };
-
     animFrameRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [isPlaying, duration]);
@@ -379,9 +395,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       const elapsed = ctx.currentTime - startTimeRef.current;
       offsetRef.current = offsetRef.current + elapsed;
     }
-    sourceNodesRef.current.forEach((src) => {
-      try { src.stop(); } catch {}
-    });
+    sourceNodesRef.current.forEach((src) => { try { src.stop(); } catch {} });
     sourceNodesRef.current.clear();
     setIsPlaying(false);
   }, [isPlaying]);
@@ -435,10 +449,12 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     <AudioEngineContext.Provider
       value={{
         isLoaded, isPlaying, isLoading, currentTime, duration, stems,
-        abMode, hasEdits, generationPrompt,
+        generationPrompt,
         loadDemo, loadFromBlob, generateTrack, regenerateStem,
         play, pause, togglePlayPause, seek, skipForward, skipBack,
-        toggleSolo, toggleMute, toggleLock, setABMode,
+        toggleSolo, toggleMute, toggleLock,
+        selectVersion, resetAllVersions,
+        getActiveBuffer, getActiveBlob,
       }}
     >
       {children}
