@@ -173,6 +173,8 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit, onVib
                     <VibesView
                       onVibeChange={handleVibeChange}
                       disabled={stems.some(s => s.isRegenerating)}
+                      generationPrompt={generationPrompt}
+                      editCount={stems.reduce((acc, s) => acc + s.versions.length - 1, 0)}
                     />
                   </div>
                 </motion.div>
