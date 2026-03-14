@@ -16,7 +16,7 @@ const phaseMessages = [
 ];
 
 const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
-  const { generateTrack } = useAudioEngine();
+  const { generateTrack, generationProgress } = useAudioEngine();
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [phase, setPhase] = useState(0);
