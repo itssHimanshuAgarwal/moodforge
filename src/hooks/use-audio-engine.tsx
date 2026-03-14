@@ -241,6 +241,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [isLoaded, stems, generationPrompt, persistCurrentSession]);
 
+  const loadDemo = useCallback(async () => {
     setIsLoading(true);
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
