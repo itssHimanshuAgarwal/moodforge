@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, Music } from "lucide-react";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
@@ -9,16 +9,33 @@ interface GenerateModalProps {
   onClose: () => void;
 }
 
+const phaseMessages = [
+  "Composing...",
+  "Arranging stems...",
+  "Mixing down...",
+];
+
 const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
   const { generateTrack } = useAudioEngine();
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [phase, setPhase] = useState(0);
+
+  // Cycle through loading messages
+  useEffect(() => {
+    if (!isGenerating) { setPhase(0); return; }
+    const interval = setInterval(() => {
+      setPhase((p) => (p + 1) % phaseMessages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isGenerating]);
 
   const handleGenerate = async () => {
     if (!prompt.trim() || isGenerating) return;
     setIsGenerating(true);
     try {
       await generateTrack(prompt.trim());
+      toast({ title: "Track generated", description: "Your track is ready for editing." });
       onClose();
       setPrompt("");
     } catch (err) {
@@ -43,13 +60,10 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-50 flex items-center justify-center"
         >
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => !isGenerating && onClose()}
           />
-
-          {/* Modal */}
           <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -57,7 +71,6 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="relative w-full max-w-lg panel-surface rounded-xl backdrop-blur-xl shadow-2xl overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <Music size={16} className="text-primary" />
@@ -72,7 +85,6 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
               </button>
             </div>
 
-            {/* Content */}
             <div className="p-6 space-y-4">
               <div>
                 <label className="text-meta text-muted-foreground mb-2 block">
@@ -90,24 +102,38 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
 
               {isGenerating ? (
                 <div className="flex flex-col items-center py-6 gap-3">
-                  <div className="flex items-center gap-1.5">
-                    {[0, 1, 2, 3, 4].map((i) => (
+                  {/* Animated waveform bars drawing left to right */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 20 }).map((_, i) => (
                       <motion.div
                         key={i}
                         className="w-1 bg-primary rounded-full"
-                        animate={{ height: [8, 24, 8] }}
+                        initial={{ height: 4, opacity: 0.2 }}
+                        animate={{
+                          height: [4, 12 + Math.random() * 16, 4],
+                          opacity: [0.2, 0.8, 0.4],
+                        }}
                         transition={{
-                          duration: 0.8,
+                          duration: 1.2,
                           repeat: Infinity,
-                          delay: i * 0.1,
+                          delay: i * 0.08,
                           ease: "easeInOut",
                         }}
                       />
                     ))}
                   </div>
-                  <span className="text-body text-muted-foreground">
-                    Generating your track...
-                  </span>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={phase}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-body text-muted-foreground"
+                    >
+                      {phaseMessages[phase]}
+                    </motion.span>
+                  </AnimatePresence>
                   <span className="text-[11px] text-muted-foreground/50">
                     This usually takes 10–30 seconds
                   </span>
@@ -117,9 +143,11 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
                   <button
                     onClick={handleGenerate}
                     disabled={!prompt.trim()}
-                    className="px-5 py-2.5 bg-primary text-primary-foreground text-body font-semibold rounded-full hover:scale-105 transition-transform duration-150 active:scale-95 glow-indigo disabled:opacity-40 disabled:hover:scale-100"
+                    className="group relative px-5 py-2.5 bg-primary text-primary-foreground text-body font-semibold rounded-full hover:scale-105 transition-transform duration-150 active:scale-95 glow-indigo disabled:opacity-40 disabled:hover:scale-100 overflow-hidden"
                   >
-                    Generate
+                    {/* Shimmer effect */}
+                    <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                    <span className="relative">Generate</span>
                   </button>
                   <button
                     onClick={onClose}
