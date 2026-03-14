@@ -170,7 +170,7 @@ const IndexContent = () => {
     <div className="h-svh w-full bg-background text-foreground font-sans flex flex-col overflow-hidden selection:bg-primary/30 noise-overlay">
       <TopBar />
       <main className="flex-1 flex overflow-hidden">
-        <div className="w-[70%] flex flex-col">
+        <div className={isLoaded ? "w-[70%] flex flex-col" : "w-full flex flex-col"}>
           <MainStage
             editIntent={showIntent}
             editTranscript={showTranscript}
@@ -179,21 +179,27 @@ const IndexContent = () => {
             onVibeChange={handleVibeChange}
           />
         </div>
-        <div className="w-[30%]">
-          <HistoryPanel
-            hasTrack={isLoaded}
-            history={history}
-            onRevert={handleRevert}
-            onResetAll={handleResetAll}
+        {isLoaded && (
+          <div className="w-[30%] animate-fade-in" style={{ animationDuration: "0.3s" }}>
+            <HistoryPanel
+              hasTrack={isLoaded}
+              history={history}
+              onRevert={handleRevert}
+              onResetAll={handleResetAll}
+            />
+          </div>
+        )}
+      </main>
+      {isLoaded && (
+        <div className="animate-fade-in" style={{ animationDuration: "0.3s" }}>
+          <TransportBar
+            voiceState={voiceState}
+            transcript={voiceState === "recording" ? null : transcript}
+            onMicClick={handleMicClick}
+            onTextSubmit={handleTextSubmit}
           />
         </div>
-      </main>
-      <TransportBar
-        voiceState={voiceState}
-        transcript={voiceState === "recording" ? null : transcript}
-        onMicClick={handleMicClick}
-        onTextSubmit={handleTextSubmit}
-      />
+      )}
       <ShortcutsHint />
     </div>
   );
