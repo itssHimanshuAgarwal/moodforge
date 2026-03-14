@@ -8,6 +8,17 @@ export interface EditIntent {
   clarification: string | null;
 }
 
+export interface StemVersion {
+  id: string;
+  versionNumber: number;
+  label: string;
+  buffer: AudioBuffer;
+  blob: Blob;
+  prompt: string;
+  userFeedback: string | null;
+  timestamp: number;
+}
+
 export interface EditHistoryItem {
   id: string;
   time: string;
@@ -15,6 +26,8 @@ export interface EditHistoryItem {
   action: string;
   stemColor: string;
   stemName: string;
+  stemId: string;
+  versionNumber: number;
   status: "applied" | "pending" | "reverted";
   intent: EditIntent;
 }

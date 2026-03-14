@@ -1,4 +1,4 @@
-import { History } from "lucide-react";
+import { History, RotateCcw } from "lucide-react";
 import type { EditHistoryItem } from "@/lib/types";
 
 const statusStyles: Record<string, string> = {
@@ -10,9 +10,11 @@ const statusStyles: Record<string, string> = {
 interface HistoryPanelProps {
   hasTrack: boolean;
   history: EditHistoryItem[];
+  onRevert?: (entry: EditHistoryItem) => void;
+  onResetAll?: () => void;
 }
 
-const HistoryPanel = ({ hasTrack, history }: HistoryPanelProps) => {
+const HistoryPanel = ({ hasTrack, history, onRevert, onResetAll }: HistoryPanelProps) => {
   return (
     <aside className="w-full h-full bg-card/40 backdrop-blur-xl flex flex-col border-l border-border">
       <div className="px-6 py-4 border-b border-border flex items-center gap-2">
@@ -22,6 +24,14 @@ const HistoryPanel = ({ hasTrack, history }: HistoryPanelProps) => {
           <span className="text-[10px] text-muted-foreground/50 ml-auto font-mono">
             {history.length}
           </span>
+        )}
+        {history.length > 0 && onResetAll && (
+          <button
+            onClick={onResetAll}
+            className="ml-2 text-[9px] px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors duration-150 font-medium uppercase tracking-wider"
+          >
+            Reset All
+          </button>
         )}
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2.5">
@@ -42,6 +52,12 @@ const HistoryPanel = ({ hasTrack, history }: HistoryPanelProps) => {
                 >
                   {item.stemName}
                 </span>
+                <span
+                  className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
+                  style={{ color: item.stemColor, backgroundColor: `${item.stemColor}15` }}
+                >
+                  v{item.versionNumber}
+                </span>
                 <span className="flex-1" />
                 <span className="text-mono text-muted-foreground/60">
                   {item.time}
@@ -55,9 +71,20 @@ const HistoryPanel = ({ hasTrack, history }: HistoryPanelProps) => {
               <p className="text-[12px] text-foreground/60 leading-relaxed italic">
                 "{item.prompt}"
               </p>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                {item.action}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {item.action}
+                </p>
+                {item.status === "applied" && onRevert && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRevert(item); }}
+                    className="flex items-center gap-1 text-[9px] text-muted-foreground/50 hover:text-foreground transition-colors duration-150"
+                  >
+                    <RotateCcw size={10} />
+                    Revert
+                  </button>
+                )}
+              </div>
             </div>
           ))
         ) : (
