@@ -167,7 +167,7 @@ const IndexContent = () => {
   const showTranscript = voiceState === "done" ? transcript : null;
 
   return (
-    <div className="h-svh w-full bg-background text-foreground font-sans flex flex-col overflow-hidden selection:bg-primary/30">
+    <div className="h-svh w-full bg-background text-foreground font-sans flex flex-col overflow-hidden selection:bg-primary/30 noise-overlay">
       <TopBar />
       <main className="flex-1 flex overflow-hidden">
         <div className="w-[70%] flex flex-col">

@@ -1,4 +1,4 @@
-import { History, RotateCcw, RotateCw } from "lucide-react";
+import { Clock, RotateCcw, RotateCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { EditHistoryItem } from "@/lib/types";
 
@@ -17,9 +17,12 @@ interface HistoryPanelProps {
 
 const HistoryPanel = ({ hasTrack, history, onRevert, onResetAll }: HistoryPanelProps) => {
   return (
-    <aside className="w-full h-full bg-card/40 backdrop-blur-xl flex flex-col border-l border-border">
+    <aside className="w-full h-full bg-card/40 backdrop-blur-xl flex flex-col relative" style={{ borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
+      {/* Faint vertical accent line */}
+      <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+
       <div className="px-6 py-4 border-b border-border flex items-center gap-2">
-        <History size={13} className="text-muted-foreground" />
+        <Clock size={13} className="text-muted-foreground" />
         <span className="text-meta text-muted-foreground">Edit History</span>
         {history.length > 0 && (
           <span className="text-[10px] text-muted-foreground/50 ml-auto font-mono">
@@ -102,8 +105,8 @@ const HistoryPanel = ({ hasTrack, history, onRevert, onResetAll }: HistoryPanelP
               animate={{ opacity: 1 }}
               className="flex items-center justify-center h-40"
             >
-              <p className="text-[11px] text-muted-foreground/50">
-                {hasTrack ? "Speak or type feedback to start editing" : "Edits will appear here"}
+              <p className="text-[11px] text-muted-foreground/50 italic">
+                {hasTrack ? "Speak or type feedback to start editing" : "Your edit timeline"}
               </p>
             </motion.div>
           )}
