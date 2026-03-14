@@ -355,22 +355,15 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
 
     try {
       const stemResults: Array<{
-        id: string;
-        label: string;
-        color: string;
-        bgClass: string;
-        buffer: AudioBuffer;
-        blob: Blob;
+        id: string; label: string; color: string; bgClass: string;
+        buffer: AudioBuffer; blob: Blob;
       }> = [];
 
-      for (let i = 0; i < STEM_CONFIGS.length; i += STEM_GENERATION_CONCURRENCY) {
-        const batch = STEM_CONFIGS.slice(i, i + STEM_GENERATION_CONCURRENCY);
-        const batchResults = await Promise.all(batch.map((config) => fetchStem(config)));
-        stemResults.push(...batchResults);
-
-        if (i + STEM_GENERATION_CONCURRENCY < STEM_CONFIGS.length) {
-          await wait(250);
-        }
+      // Generate stems ONE AT A TIME to respect ElevenLabs concurrency limit
+      for (let i = 0; i < STEM_CONFIGS.length; i++) {
+        if (i > 0) await wait(STEM_DELAY_BETWEEN_MS);
+        const result = await fetchStem(STEM_CONFIGS[i]);
+        stemResults.push(result);
       }
 
       setupStems(stemResults);
