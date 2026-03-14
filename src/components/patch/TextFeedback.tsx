@@ -25,7 +25,7 @@ const TextFeedback = ({ onSubmit, disabled }: TextFeedbackProps) => {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           disabled={disabled}
-          placeholder="Describe what to change..."
+          placeholder="Tell me what to change..."
           className="w-full h-7 px-3 pr-8 text-[11px] bg-muted/40 border border-border rounded-full text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 transition-colors duration-150 disabled:opacity-40"
         />
         <button

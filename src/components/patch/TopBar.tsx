@@ -14,8 +14,8 @@ const TopBar = () => {
               MoodForge
             </h1>
           </div>
-          <span className="text-meta text-muted-foreground tracking-[0.15em]">
-            Shape your sound
+          <span className="text-meta text-muted-foreground tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.35)" }}>
+            DISCOVER · GENERATE · EDIT
           </span>
         </div>
         <nav className="flex items-center gap-3">
