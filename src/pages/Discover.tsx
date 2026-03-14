@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import MoodForgeExplorer from "@/components/moodforge/MoodForgeExplorer";
-import { AudioEngineProvider, useAudioEngine } from "@/hooks/use-audio-engine";
+import { useAudioEngine } from "@/hooks/use-audio-engine";
 import { toast } from "@/hooks/use-toast";
 
 const DiscoverContent = () => {
