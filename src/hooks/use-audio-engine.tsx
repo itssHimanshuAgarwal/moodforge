@@ -17,6 +17,9 @@ import type { AudioEngineContextValue } from "./audio-engine-context";
 import { saveSession, loadSession, clearSession, type StoredSession } from "@/lib/session-store";
 
 const MAX_VERSIONS = 10;
+const STEM_GENERATION_CONCURRENCY = 2;
+const STEM_RETRY_DELAYS_MS = [500, 1200];
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export interface StemState {
   id: string;
@@ -296,42 +299,79 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
 
-    try {
-      // Generate each stem individually with stem-specific prompts
-      const stemResults = await Promise.all(
-        STEM_CONFIGS.map(async (config) => {
-          const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-music`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              },
-              body: JSON.stringify({ prompt, duration_seconds: 30, stem_type: config.id }),
-            }
-          );
+    const fetchStem = async (config: typeof STEM_CONFIGS[number]) => {
+      let attempt = 0;
 
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({ error: "Unknown error" }));
-            throw new Error(errData.error || `HTTP ${response.status}`);
+      while (true) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-music`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ prompt, duration_seconds: 30, stem_type: config.id }),
+          }
+        );
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ error: "Unknown error" }));
+          const errorMessage = errData.error || `HTTP ${response.status}`;
+
+          if (response.status === 429 && attempt < STEM_RETRY_DELAYS_MS.length) {
+            const delay = STEM_RETRY_DELAYS_MS[attempt];
+            attempt += 1;
+            await wait(delay);
+            continue;
           }
 
-          const audioArrayBuf = await response.arrayBuffer();
-          const blob = new Blob([audioArrayBuf], { type: "audio/mpeg" });
-          const buffer = await ctx.decodeAudioData(audioArrayBuf.slice(0));
+          if (response.status === 429) {
+            throw new Error("Too many requests right now. Please try again in a few seconds.");
+          }
 
-          return {
-            id: config.id,
-            label: config.label,
-            color: config.color,
-            bgClass: config.bgClass,
-            buffer,
-            blob,
-          };
-        })
-      );
+          if (response.status === 401 || response.status === 402) {
+            throw new Error("Generation credits are exhausted. Please top up your ElevenLabs credits and try again.");
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        const audioArrayBuf = await response.arrayBuffer();
+        const blob = new Blob([audioArrayBuf], { type: "audio/mpeg" });
+        const buffer = await ctx.decodeAudioData(audioArrayBuf.slice(0));
+
+        return {
+          id: config.id,
+          label: config.label,
+          color: config.color,
+          bgClass: config.bgClass,
+          buffer,
+          blob,
+        };
+      }
+    };
+
+    try {
+      const stemResults: Array<{
+        id: string;
+        label: string;
+        color: string;
+        bgClass: string;
+        buffer: AudioBuffer;
+        blob: Blob;
+      }> = [];
+
+      for (let i = 0; i < STEM_CONFIGS.length; i += STEM_GENERATION_CONCURRENCY) {
+        const batch = STEM_CONFIGS.slice(i, i + STEM_GENERATION_CONCURRENCY);
+        const batchResults = await Promise.all(batch.map((config) => fetchStem(config)));
+        stemResults.push(...batchResults);
+
+        if (i + STEM_GENERATION_CONCURRENCY < STEM_CONFIGS.length) {
+          await wait(250);
+        }
+      }
 
       setupStems(stemResults);
       setGenerationPrompt(prompt);
@@ -364,6 +404,12 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       );
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ error: "Unknown error" }));
+        if (response.status === 429) {
+          throw new Error("Rate limit reached. Please wait a few seconds and try again.");
+        }
+        if (response.status === 401 || response.status === 402) {
+          throw new Error("Generation credits are exhausted. Please top up your ElevenLabs credits.");
+        }
         throw new Error(errData.error || `HTTP ${response.status}`);
       }
       const audioArrayBuf = await response.arrayBuffer();

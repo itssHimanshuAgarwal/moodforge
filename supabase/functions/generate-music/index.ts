@@ -43,7 +43,6 @@ serve(async (req) => {
       );
     }
 
-    // Build stem-specific prompt if stem_type is provided
     const finalPrompt = stem_type && STEM_PROMPT_MAP[stem_type]
       ? STEM_PROMPT_MAP[stem_type](prompt)
       : prompt;
@@ -65,7 +64,31 @@ serve(async (req) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error(`ElevenLabs API error [${response.status}]: ${errText}`);
-      throw new Error(`ElevenLabs API error [${response.status}]: ${errText}`);
+
+      const normalizedError = errText.toLowerCase();
+
+      if (response.status === 429 || normalizedError.includes("concurrent_limit_exceeded")) {
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit reached: too many concurrent generation requests. Please retry in a few seconds.",
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if ((response.status === 401 && normalizedError.includes("insufficient_credits")) || normalizedError.includes("payment_required")) {
+        return new Response(
+          JSON.stringify({
+            error: "Insufficient credits for music generation. Please top up your ElevenLabs account.",
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ error: `ElevenLabs API error [${response.status}]` }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const audioBuffer = await response.arrayBuffer();

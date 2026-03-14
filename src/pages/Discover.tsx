@@ -20,7 +20,7 @@ const DiscoverContent = () => {
       console.error(err);
       toast({
         title: "Generation failed",
-        description: "Try a different emotional profile or upload a file instead.",
+        description: err instanceof Error ? err.message : "Try a different emotional profile.",
         variant: "destructive",
       });
     } finally {
