@@ -1,4 +1,4 @@
-import { Lock, Unlock, Loader2 } from "lucide-react";
+import { Lock, Unlock, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import WaveformDisplay from "./WaveformDisplay";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
