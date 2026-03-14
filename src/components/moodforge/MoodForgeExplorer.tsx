@@ -19,9 +19,10 @@ import { toast } from "@/hooks/use-toast";
 interface MoodForgeExplorerProps {
   onGenerateWithPrompt: (prompt: string) => void;
   isGenerating?: boolean;
+  generationProgress?: string | null;
 }
 
-export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }: MoodForgeExplorerProps) {
+export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating, generationProgress }: MoodForgeExplorerProps) {
   const [cursorValues, setCursorValues] = useState<Record<GemsKey, number>>(
     () => Object.fromEntries(GEMS_KEYS.map(k => [k, 0.5])) as Record<GemsKey, number>
   );
