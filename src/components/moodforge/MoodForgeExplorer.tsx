@@ -3,7 +3,7 @@
  * Users explore emotions visually, find matching reference tracks,
  * then generate a prompt to feed into the Generate Track pipeline.
  */
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Copy, Check, ArrowRight, RotateCcw } from "lucide-react";
 import MoodRadar from "./MoodRadar";
@@ -13,6 +13,7 @@ import {
   SAMPLE_TRACKS, buildPromptFromGems,
   type GemsKey, type GemsTrack,
 } from "@/lib/gems-data";
+import { playTrackPreview, stopPreview } from "@/lib/track-preview-synth";
 import { toast } from "@/hooks/use-toast";
 
 interface MoodForgeExplorerProps {
