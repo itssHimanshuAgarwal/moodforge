@@ -42,7 +42,7 @@ const GenerateModal = ({ isOpen, onClose }: GenerateModalProps) => {
       console.error(err);
       toast({
         title: "Generation failed",
-        description: err instanceof Error ? err.message : "Please try again.",
+        description: "Couldn't generate track — try uploading a file instead.",
         variant: "destructive",
       });
     } finally {
