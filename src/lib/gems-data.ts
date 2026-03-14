@@ -74,26 +74,18 @@ export function buildPromptFromGems(
     parts.push(userDescription.trim());
   }
 
-  // Emotional profile from cursor
+  // Emotional profile from cursor — only describe what we WANT (positive framing)
+  // Negation phrases like "avoids sadness" or "minimize tension" trigger content filters
   const high = GEMS_KEYS.filter(k => cursorValues[k] > 0.7);
-  const low = GEMS_KEYS.filter(k => cursorValues[k] < 0.3);
+  const moderate = GEMS_KEYS.filter(k => cursorValues[k] >= 0.4 && cursorValues[k] <= 0.7);
 
   if (high.length > 0) {
     const descriptors = high.map(k => MOOD_WORDS[k][0]);
     parts.push(`Emotionally ${descriptors.join(", ")}.`);
-  }
-  if (low.length > 0) {
-    parts.push(`Avoids ${low.map(k => GEMS_LABELS[k].toLowerCase()).join(", ")}.`);
-  }
-
-  // Target emotional profile
-  const cursorHigh = GEMS_KEYS.filter(k => cursorValues[k] > 0.7).map(k => GEMS_LABELS[k].toLowerCase());
-  const cursorLow = GEMS_KEYS.filter(k => cursorValues[k] < 0.3).map(k => GEMS_LABELS[k].toLowerCase());
-  if (cursorHigh.length || cursorLow.length) {
-    let intent = "Target emotional profile:";
-    if (cursorHigh.length) intent += ` emphasize ${cursorHigh.join(", ")}`;
-    if (cursorLow.length) intent += `${cursorHigh.length ? ";" : ""} minimize ${cursorLow.join(", ")}`;
-    parts.push(intent + ".");
+  } else if (moderate.length > 0) {
+    // If nothing is high, describe the moderate ones
+    const descriptors = moderate.slice(0, 3).map(k => MOOD_WORDS[k][0]);
+    parts.push(`Emotionally ${descriptors.join(", ")}.`);
   }
 
   // Reference track details
