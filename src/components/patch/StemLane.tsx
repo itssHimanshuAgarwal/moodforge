@@ -1,6 +1,8 @@
 import { Lock, Unlock, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import WaveformDisplay from "./WaveformDisplay";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
+import { playPop } from "@/lib/ui-sounds";
 
 interface StemLaneProps {
   stemId: string;
@@ -21,6 +23,11 @@ const StemLane = ({ stemId }: StemLaneProps) => {
   const dimmed = !isAudible;
   const displayBlob = getActiveBlob(stem);
   const hasMultipleVersions = stem.versions.length > 1;
+
+  const handleVersionSelect = (index: number) => {
+    playPop();
+    selectVersion(stem.id, index);
+  };
 
   return (
     <div className="space-y-1.5">
@@ -70,7 +77,7 @@ const StemLane = ({ stemId }: StemLaneProps) => {
           {stem.isRegenerating ? (
             <div className="absolute inset-0 flex items-center justify-center gap-2">
               <Loader2 size={14} className="text-secondary animate-spin" />
-              <span className="text-[10px] text-secondary">Regenerating…</span>
+              <span className="text-[10px] text-secondary">Re-imagining {stem.label.toLowerCase()}…</span>
             </div>
           ) : displayBlob ? (
             <WaveformDisplay
@@ -102,11 +109,17 @@ const StemLane = ({ stemId }: StemLaneProps) => {
             className="p-1 transition-colors duration-150"
           >
             {stem.isLocked ? (
-              <Lock
-                size={13}
-                className="text-patch-harmony"
-                style={{ filter: "drop-shadow(0 0 4px rgba(245, 158, 11, 0.3))" }}
-              />
+              <motion.div
+                initial={{ scale: 1.3 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 15 }}
+              >
+                <Lock
+                  size={13}
+                  className="text-patch-harmony"
+                  style={{ filter: "drop-shadow(0 0 4px rgba(245, 158, 11, 0.3))" }}
+                />
+              </motion.div>
             ) : (
               <Unlock
                 size={13}
@@ -121,9 +134,12 @@ const StemLane = ({ stemId }: StemLaneProps) => {
       {hasMultipleVersions && (
         <div className="flex items-center gap-1 pl-28 ml-3">
           {stem.versions.map((v, i) => (
-            <button
+            <motion.button
               key={v.id}
-              onClick={() => selectVersion(stem.id, i)}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2, delay: i * 0.03 }}
+              onClick={() => handleVersionSelect(i)}
               title={v.label}
               className={`text-[9px] font-mono px-2 py-0.5 rounded-full border transition-all duration-150 ${
                 i === stem.activeVersionIndex
@@ -133,7 +149,7 @@ const StemLane = ({ stemId }: StemLaneProps) => {
               style={i === stem.activeVersionIndex ? { color: stem.color, borderColor: stem.color, backgroundColor: `${stem.color}15` } : undefined}
             >
               v{v.versionNumber}
-            </button>
+            </motion.button>
           ))}
         </div>
       )}

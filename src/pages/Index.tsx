@@ -5,12 +5,14 @@ import HistoryPanel from "@/components/patch/HistoryPanel";
 import TransportBar from "@/components/patch/TransportBar";
 import { AudioEngineProvider, useAudioEngine } from "@/hooks/use-audio-engine";
 import { useVoiceFeedback } from "@/hooks/use-voice-feedback";
+import { useKeyboardShortcuts, ShortcutsHint } from "@/components/patch/KeyboardShortcuts";
+import { playClick, playChime, playPop } from "@/lib/ui-sounds";
 import type { EditHistoryItem } from "@/lib/types";
 import { STEM_COLOR_MAP } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 
 const IndexContent = () => {
-  const { isLoaded, regenerateStem, generationPrompt, stems, selectVersion, resetAllVersions } = useAudioEngine();
+  const { isLoaded, regenerateStem, generationPrompt, stems, selectVersion, resetAllVersions, togglePlayPause, toggleSolo } = useAudioEngine();
   const {
     voiceState, transcript, intent,
     startRecording, stopRecording, submitText, reset,
@@ -20,11 +22,13 @@ const IndexContent = () => {
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleMicClick = useCallback(() => {
+    playClick();
     if (voiceState === "recording") {
       stopRecording();
     } else if (voiceState === "idle" || voiceState === "done" || voiceState === "error") {
       reset();
       startRecording();
+      toast({ title: "Voice recording started", description: "Speak your edit instruction." });
     }
   }, [voiceState, startRecording, stopRecording, reset]);
 
@@ -55,7 +59,6 @@ const IndexContent = () => {
       `for the ${stemInfo.label.toLowerCase()} part`,
     ].join(", ");
 
-    // Determine version number for this stem
     const targetStem = stems.find(s => s.id === targetStemId);
     const nextVersion = (targetStem?.versions.length ?? 0) + 1;
 
@@ -76,15 +79,20 @@ const IndexContent = () => {
     setIsRegenerating(true);
     try {
       const actualVersion = await regenerateStem(targetStemId, regenPrompt, transcript);
+      playChime();
       setHistory((prev) =>
         prev.map((h) => h.id === entry.id ? { ...h, status: "applied", versionNumber: actualVersion } : h)
       );
+      toast({
+        title: `Edit applied — ${stemInfo.label.toLowerCase()} v${actualVersion} created`,
+        description: intent.action,
+      });
       reset();
     } catch (err) {
       console.error("Stem regeneration failed:", err);
       toast({
-        title: "Regeneration failed",
-        description: err instanceof Error ? err.message : "Try again.",
+        title: "Couldn't generate stem",
+        description: err instanceof Error ? err.message : "Try a different description.",
         variant: "destructive",
       });
       setHistory((prev) =>
@@ -100,7 +108,7 @@ const IndexContent = () => {
   }, [reset]);
 
   const handleRevert = useCallback((entry: EditHistoryItem) => {
-    // Go back to previous version for this stem
+    playPop();
     const stem = stems.find(s => s.id === entry.stemId);
     if (stem && stem.activeVersionIndex > 0) {
       selectVersion(entry.stemId, stem.activeVersionIndex - 1);
@@ -108,8 +116,19 @@ const IndexContent = () => {
   }, [stems, selectVersion]);
 
   const handleResetAll = useCallback(() => {
+    playPop();
     resetAllVersions();
   }, [resetAllVersions]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onTogglePlayPause: togglePlayPause,
+    onToggleMic: handleMicClick,
+    onSoloStem: (index) => {
+      if (stems[index]) toggleSolo(stems[index].id);
+    },
+    onDismissEdit: handleRetryEdit,
+  });
 
   const showIntent = voiceState === "done" ? intent : null;
   const showTranscript = voiceState === "done" ? transcript : null;
@@ -141,6 +160,7 @@ const IndexContent = () => {
         onMicClick={handleMicClick}
         onTextSubmit={handleTextSubmit}
       />
+      <ShortcutsHint />
     </div>
   );
 };
