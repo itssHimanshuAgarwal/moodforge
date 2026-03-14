@@ -165,13 +165,23 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     hasRestoredRef.current = true;
 
     (async () => {
+      console.log("[Session] Checking for saved session...");
       const session = await loadSession();
-      if (!session || !session.stems.length) return;
+      if (!session || !session.stems.length) {
+        console.log("[Session] No saved session found");
+        return;
+      }
 
+      console.log("[Session] Found saved session, restoring...");
       setIsLoading(true);
       try {
+        // Create AudioContext but DON'T require resume — browsers block it without user gesture.
+        // Audio decoding works even while suspended in most browsers.
         const ctx = getAudioContext();
-        if (ctx.state === "suspended") await ctx.resume();
+        // Don't await resume — just try it, it will auto-resume on first user interaction (play)
+        ctx.resume().catch(() => {
+          console.log("[Session] AudioContext suspended (will resume on user interaction)");
+        });
 
         const restoredStems: StemState[] = [];
         for (const stored of session.stems) {
@@ -184,32 +194,39 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
 
           const versions: StemVersion[] = [];
           for (const sv of stored.versions) {
-            const arrayBuf = await sv.blob.arrayBuffer();
-            const buffer = await ctx.decodeAudioData(arrayBuf);
-            versions.push({
-              id: sv.id,
-              versionNumber: sv.versionNumber,
-              label: sv.label,
-              buffer,
-              blob: sv.blob,
-              prompt: sv.prompt,
-              userFeedback: sv.userFeedback,
-              timestamp: sv.timestamp,
-            });
+            try {
+              const arrayBuf = await sv.blob.arrayBuffer();
+              // decodeAudioData works even with suspended AudioContext
+              const buffer = await ctx.decodeAudioData(arrayBuf);
+              versions.push({
+                id: sv.id,
+                versionNumber: sv.versionNumber,
+                label: sv.label,
+                buffer,
+                blob: sv.blob,
+                prompt: sv.prompt,
+                userFeedback: sv.userFeedback,
+                timestamp: sv.timestamp,
+              });
+            } catch (decodeErr) {
+              console.warn(`[Session] Failed to decode version ${sv.id}:`, decodeErr);
+            }
           }
 
-          restoredStems.push({
-            id: stored.id,
-            label: stored.label,
-            color: stored.color,
-            bgClass: stored.bgClass,
-            isSolo: false,
-            isMuted: false,
-            isLocked: false,
-            versions,
-            activeVersionIndex: stored.activeVersionIndex,
-            isRegenerating: false,
-          });
+          if (versions.length > 0) {
+            restoredStems.push({
+              id: stored.id,
+              label: stored.label,
+              color: stored.color,
+              bgClass: stored.bgClass,
+              isSolo: false,
+              isMuted: false,
+              isLocked: false,
+              versions,
+              activeVersionIndex: Math.min(stored.activeVersionIndex, versions.length - 1),
+              isRegenerating: false,
+            });
+          }
         }
 
         if (restoredStems.length && restoredStems[0].versions.length) {
@@ -219,10 +236,10 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
           offsetRef.current = 0;
           setGenerationPrompt(session.generationPrompt);
           setIsLoaded(true);
-          console.log("Session restored from IndexedDB");
+          console.log(`[Session] Restored ${restoredStems.length} stems from IndexedDB`);
         }
       } catch (err) {
-        console.warn("Failed to restore session:", err);
+        console.warn("[Session] Failed to restore session:", err);
       } finally {
         setIsLoading(false);
       }
