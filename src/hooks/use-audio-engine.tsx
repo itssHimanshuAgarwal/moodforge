@@ -65,6 +65,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
   const animFrameRef = useRef(0);
+  const hasRestoredRef = useRef(false);
 
   const getAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
