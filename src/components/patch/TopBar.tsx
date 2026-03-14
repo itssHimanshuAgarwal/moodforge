@@ -4,9 +4,9 @@ const TopBar = () => {
   return (
     <header className="h-12 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background/80 backdrop-blur-xl z-10">
       <div className="flex items-baseline gap-3">
-        <h1 className="text-title text-foreground uppercase">Patch</h1>
+        <h1 className="text-title text-foreground uppercase">MoodForge</h1>
         <span className="text-meta text-muted-foreground tracking-[0.15em]">
-          Fix what you mean
+          Shape your sound
         </span>
       </div>
       <nav className="flex items-center gap-3">
