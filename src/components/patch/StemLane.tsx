@@ -9,6 +9,8 @@ interface StemLaneProps {
   isEditTarget?: boolean;
 }
 
+import { Sparkles } from "lucide-react";
+
 const StemLane = ({ stemId, isEditTarget = false }: StemLaneProps) => {
   const {
     stems, currentTime, duration, isPlaying,

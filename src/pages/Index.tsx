@@ -45,14 +45,33 @@ const IndexContent = () => {
 
     // Normalize GPT output: lowercase, trim, handle variations
     const rawTarget = (intent.target_stem || "full_mix").toLowerCase().trim();
-    const normalizedTarget = rawTarget === "full" ? "full_mix" : rawTarget;
+    
+    // Fuzzy match: GPT might return "bass guitar", "vocal", "drums/percussion", etc.
+    const STEM_ALIASES: Record<string, string> = {
+      drums: "drums", drum: "drums", percussion: "drums", kick: "drums", snare: "drums", hihat: "drums",
+      bass: "bass", "bass guitar": "bass", "bass line": "bass", bassline: "bass", sub: "bass",
+      melody: "melody", lead: "melody", "lead synth": "melody", synth: "melody", piano: "melody",
+      harmony: "harmony", chords: "harmony", pad: "harmony", pads: "harmony", keys: "harmony",
+      vocals: "vocals", vocal: "vocals", voice: "vocals", singing: "vocals", vox: "vocals",
+      full_mix: "full_mix", full: "full_mix", mix: "full_mix", master: "full_mix", everything: "full_mix",
+    };
+    
+    // Try exact match first, then alias lookup, then fuzzy substring match
+    let normalizedTarget = STEM_ALIASES[rawTarget] || rawTarget;
+    if (!stems.find(s => s.id === normalizedTarget)) {
+      // Try substring matching: "bass guitar" contains "bass"
+      const fuzzyMatch = Object.entries(STEM_ALIASES).find(([alias]) => rawTarget.includes(alias));
+      if (fuzzyMatch) normalizedTarget = fuzzyMatch[1];
+    }
+    
     const stemInfo = STEM_COLOR_MAP[normalizedTarget] || STEM_COLOR_MAP.full_mix;
     const now = new Date();
     const timeStr = now.toTimeString().slice(0, 8);
 
-    // Find the matching stem — use exact ID match against available stems
     const matchedStem = stems.find(s => s.id === normalizedTarget);
     const targetStemId = matchedStem?.id || stems[0]?.id || "full_mix";
+    
+    console.log("[Edit] GPT target_stem:", intent.target_stem, "→ resolved:", targetStemId);
 
     const basePrompt = generationPrompt || "music track";
     const regenPrompt = [
