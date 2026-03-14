@@ -362,15 +362,19 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
 
       // Generate stems ONE AT A TIME to respect ElevenLabs concurrency limit
       for (let i = 0; i < STEM_CONFIGS.length; i++) {
+        const config = STEM_CONFIGS[i];
+        setGenerationProgress(`Generating ${config.label} (${i + 1}/${STEM_CONFIGS.length})...`);
         if (i > 0) await wait(STEM_DELAY_BETWEEN_MS);
-        const result = await fetchStem(STEM_CONFIGS[i]);
+        const result = await fetchStem(config);
         stemResults.push(result);
       }
 
+      setGenerationProgress(null);
       setupStems(stemResults);
       setGenerationPrompt(prompt);
     } catch (err) {
       console.error("Track generation failed:", err);
+      setGenerationProgress(null);
       throw err;
     } finally {
       setIsLoading(false);
