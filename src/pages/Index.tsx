@@ -43,13 +43,16 @@ const IndexContent = () => {
   const handleApplyEdit = useCallback(async () => {
     if (!intent || !transcript) return;
 
-    const stemInfo = STEM_COLOR_MAP[intent.target_stem] || STEM_COLOR_MAP.full_mix;
+    // Normalize GPT output: lowercase, trim, handle variations
+    const rawTarget = (intent.target_stem || "full_mix").toLowerCase().trim();
+    const normalizedTarget = rawTarget === "full" ? "full_mix" : rawTarget;
+    const stemInfo = STEM_COLOR_MAP[normalizedTarget] || STEM_COLOR_MAP.full_mix;
     const now = new Date();
     const timeStr = now.toTimeString().slice(0, 8);
 
-    const targetStemId = intent.target_stem === "full_mix"
-      ? stems[0]?.id || "full_mix"
-      : intent.target_stem;
+    // Find the matching stem — use exact ID match against available stems
+    const matchedStem = stems.find(s => s.id === normalizedTarget);
+    const targetStemId = matchedStem?.id || stems[0]?.id || "full_mix";
 
     const basePrompt = generationPrompt || "music track";
     const regenPrompt = [

@@ -6,6 +6,7 @@ import { playPop } from "@/lib/ui-sounds";
 
 interface StemLaneProps {
   stemId: string;
+  isEditTarget?: boolean;
 }
 
 const StemLane = ({ stemId }: StemLaneProps) => {
