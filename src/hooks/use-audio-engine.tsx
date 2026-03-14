@@ -1,5 +1,4 @@
 import {
-  createContext,
   useContext,
   useState,
   useCallback,
@@ -13,6 +12,8 @@ import {
   audioBufferToBlob,
 } from "@/lib/audio-generator";
 import type { StemVersion } from "@/lib/types";
+import { AudioEngineContext } from "./audio-engine-context";
+import type { AudioEngineContextValue } from "./audio-engine-context";
 
 const MAX_VERSIONS = 10;
 
@@ -28,36 +29,6 @@ export interface StemState {
   activeVersionIndex: number;
   isRegenerating: boolean;
 }
-
-interface AudioEngineContextValue {
-  isLoaded: boolean;
-  isPlaying: boolean;
-  isLoading: boolean;
-  currentTime: number;
-  duration: number;
-  stems: StemState[];
-  generationPrompt: string | null;
-
-  loadDemo: () => Promise<void>;
-  loadFromBlob: (blob: Blob, label?: string) => Promise<void>;
-  generateTrack: (prompt: string) => Promise<void>;
-  regenerateStem: (stemId: string, prompt: string, userFeedback?: string) => Promise<number>;
-  play: () => void;
-  pause: () => void;
-  togglePlayPause: () => void;
-  seek: (time: number) => void;
-  skipForward: () => void;
-  skipBack: () => void;
-  toggleSolo: (stemId: string) => void;
-  toggleMute: (stemId: string) => void;
-  toggleLock: (stemId: string) => void;
-  selectVersion: (stemId: string, versionIndex: number) => void;
-  resetAllVersions: () => void;
-  getActiveBuffer: (stem: StemState) => AudioBuffer | null;
-  getActiveBlob: (stem: StemState) => Blob | null;
-}
-
-const AudioEngineContext = createContext<AudioEngineContextValue | null>(null);
 
 export function useAudioEngine() {
   const ctx = useContext(AudioEngineContext);
