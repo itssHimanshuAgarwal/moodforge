@@ -5,6 +5,102 @@ import { useAudioEngine } from "@/hooks/use-audio-engine";
 import { Crosshair, Music, Mic, Loader2, ArrowRight } from "lucide-react";
 import GenerateModal from "./GenerateModal";
 
+/* ── Rotating typewriter headline ── */
+const ROTATING_PHRASES = [
+  "You just can't say it.",
+  "Feel it instead.",
+  "Navigate it by emotion.",
+  "Edit it with your voice.",
+  "Shape it into yours.",
+];
+
+const CHAR_DELAY = 40;
+const HOLD_DURATION = 2500;
+const FADE_DURATION = 300;
+
+const RotatingHeadline = ({ startDelay }: { startDelay: number }) => {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [displayedChars, setDisplayedChars] = useState(0);
+  const [phase, setPhase] = useState<"waiting" | "typing" | "holding" | "fading">("waiting");
+  const [opacity, setOpacity] = useState(1);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const currentPhrase = ROTATING_PHRASES[phraseIndex];
+
+  useEffect(() => {
+    // Initial delay to sync with page entrance animation
+    timerRef.current = setTimeout(() => setPhase("typing"), startDelay * 1000);
+    return () => clearTimeout(timerRef.current);
+  }, [startDelay]);
+
+  useEffect(() => {
+    if (phase === "typing") {
+      if (displayedChars < currentPhrase.length) {
+        timerRef.current = setTimeout(() => setDisplayedChars((c) => c + 1), CHAR_DELAY);
+      } else {
+        timerRef.current = setTimeout(() => setPhase("holding"), 0);
+      }
+      return () => clearTimeout(timerRef.current);
+    }
+
+    if (phase === "holding") {
+      timerRef.current = setTimeout(() => setPhase("fading"), HOLD_DURATION);
+      return () => clearTimeout(timerRef.current);
+    }
+
+    if (phase === "fading") {
+      setOpacity(0);
+      timerRef.current = setTimeout(() => {
+        setPhraseIndex((i) => (i + 1) % ROTATING_PHRASES.length);
+        setDisplayedChars(0);
+        setOpacity(1);
+        setPhase("typing");
+      }, FADE_DURATION);
+      return () => clearTimeout(timerRef.current);
+    }
+  }, [phase, displayedChars, currentPhrase.length]);
+
+  const showCursor = phase === "typing" || phase === "holding";
+
+  return (
+    <div
+      className="font-display mt-1 relative inline-flex items-baseline justify-center"
+      style={{
+        fontSize: 52,
+        fontWeight: 600,
+        lineHeight: 1.1,
+        minHeight: "1.15em",
+        opacity: phase === "fading" ? 0 : 1,
+        transition: `opacity ${FADE_DURATION}ms ease`,
+      }}
+    >
+      <span
+        style={{
+          background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
+      >
+        {currentPhrase.slice(0, displayedChars)}
+      </span>
+      {showCursor && (
+        <span
+          className="inline-block ml-px"
+          style={{
+            width: 2,
+            height: 36,
+            background: "linear-gradient(180deg, #22d3ee, #a78bfa)",
+            animation: "cursorBlink 1.2s step-end infinite",
+            verticalAlign: "baseline",
+            marginBottom: -4,
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
 /* ── Radar background ── */
 const SPOKE_COUNT = 9;
 const DOT_COLORS = [
