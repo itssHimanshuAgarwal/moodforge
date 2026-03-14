@@ -1,10 +1,9 @@
 import { Play, Pause, SkipBack, SkipForward, Mic, Volume2, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState } from "react";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
 import SpeechBubble from "./SpeechBubble";
 import TextFeedback from "./TextFeedback";
-import type { VoiceState } from "@/lib/types";
+import type { VoiceState, ABMode } from "@/lib/types";
 
 interface TransportBarProps {
   voiceState: VoiceState;
@@ -17,6 +16,7 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
   const {
     isLoaded, isPlaying, currentTime, duration,
     togglePlayPause, skipBack, skipForward,
+    abMode, setABMode, hasEdits,
   } = useAudioEngine();
 
   const isRecording = voiceState === "recording";
@@ -62,7 +62,7 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
         </div>
       </div>
 
-      {/* Center: The Mic + Speech Bubble */}
+      {/* Center: The Mic */}
       <div className="absolute left-1/2 -translate-x-1/2 -top-8 z-10">
         <div className="relative">
           <SpeechBubble voiceState={voiceState} transcript={transcript} />
@@ -99,10 +99,10 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
         </div>
       </div>
 
-      {/* Right: Text input + A/B + Volume */}
+      {/* Right */}
       <div className="w-1/3 flex justify-end items-center gap-4">
         <TextFeedback onSubmit={onTextSubmit} disabled={micBusy} />
-        <ABToggle disabled={true} />
+        <ABToggle disabled={!hasEdits} mode={abMode} onChange={setABMode} />
         <div className="flex items-center gap-2.5 text-muted-foreground">
           <Volume2 size={15} />
           <div className="w-16 h-1 bg-muted rounded-full relative">
@@ -114,14 +114,22 @@ const TransportBar = ({ voiceState, transcript, onMicClick, onTextSubmit }: Tran
   );
 };
 
-const ABToggle = ({ disabled }: { disabled: boolean }) => {
-  const [isEdited, setIsEdited] = useState(false);
+const ABToggle = ({
+  disabled,
+  mode,
+  onChange,
+}: {
+  disabled: boolean;
+  mode: ABMode;
+  onChange: (mode: ABMode) => void;
+}) => {
+  const isEdited = mode === "edited";
 
   return (
-    <div className={`flex flex-col items-center gap-1 ${disabled ? "opacity-30 pointer-events-none" : ""}`}>
+    <div className={`flex flex-col items-center gap-1 transition-opacity duration-200 ${disabled ? "opacity-30 pointer-events-none" : ""}`}>
       <span className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider">Compare</span>
       <button
-        onClick={() => !disabled && setIsEdited(!isEdited)}
+        onClick={() => onChange(isEdited ? "original" : "edited")}
         className="relative w-[88px] h-6 bg-muted/60 rounded-full border border-border flex items-center p-0.5 transition-colors duration-150"
       >
         <div
