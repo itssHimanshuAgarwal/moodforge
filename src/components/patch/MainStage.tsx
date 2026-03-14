@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useState, useCallback } from "react";
 import StemLane from "./StemLane";
 import EmptyState from "./EmptyState";
 import WaveformDisplay from "./WaveformDisplay";
 import EditCard from "./EditCard";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
 import type { EditIntent } from "@/lib/types";
+import { toast } from "@/hooks/use-toast";
 
 interface MainStageProps {
   editIntent: EditIntent | null;
@@ -14,17 +16,54 @@ interface MainStageProps {
 }
 
 const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: MainStageProps) => {
-  const { isLoaded, stems, currentTime, duration, isPlaying, seek } = useAudioEngine();
+  const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, abMode } = useAudioEngine();
   const mainBlob = stems[0]?.blob ?? null;
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const validTypes = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp3", "audio/x-wav"];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg)$/i)) {
+      toast({ title: "Unsupported format", description: "Please drop an MP3, WAV, or OGG file.", variant: "destructive" });
+      return;
+    }
+    try {
+      await loadFromBlob(file, file.name);
+    } catch {
+      toast({ title: "Couldn't load file", description: "The audio file may be corrupted.", variant: "destructive" });
+    }
+  }, [loadFromBlob]);
+
+  // Get the active blob for the main waveform display
+  const displayBlob = abMode === "edited" && stems[0]?.editedBlob ? stems[0].editedBlob : mainBlob;
 
   return (
     <section
       className="flex-1 border-r border-border flex flex-col relative overflow-hidden"
       style={{
-        background:
-          "radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,0.04), transparent)",
+        background: "radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,0.04), transparent)",
       }}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
     >
+      {/* Drag overlay */}
+      <AnimatePresence>
+        {isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-30 bg-primary/5 border-2 border-dashed border-primary/30 rounded-lg flex items-center justify-center backdrop-blur-sm"
+          >
+            <span className="text-section text-primary">Drop audio file here</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         {!isLoaded ? (
           <EmptyState key="empty" />
@@ -39,9 +78,9 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
             {/* Main waveform */}
             <div className="w-full panel-surface rounded-lg relative overflow-hidden shrink-0">
               <div className="px-4 pt-3 pb-1">
-                {mainBlob ? (
+                {displayBlob ? (
                   <WaveformDisplay
-                    blob={mainBlob}
+                    blob={displayBlob}
                     color="#6366f1"
                     progressColor="#22d3ee"
                     height={80}
