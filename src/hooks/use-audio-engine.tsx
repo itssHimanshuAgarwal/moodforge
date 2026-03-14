@@ -379,7 +379,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [getAudioContext, setupStems, demoMode]);
+  }, [getAudioContext, setupStems]);
 
   const regenerateStem = useCallback(async (stemId: string, prompt: string, userFeedback?: string) => {
     setStems((prev) =>
