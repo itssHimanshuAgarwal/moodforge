@@ -1,19 +1,19 @@
 /**
  * MoodForge Explorer — GEMS 9 spider web + track matching + prompt generation.
- * Users explore emotions visually, find matching reference tracks,
- * then generate a prompt to feed into the Generate Track pipeline.
+ * Queries real FMA tracks from the database when available, falls back to samples.
  */
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Copy, Check, ArrowRight, RotateCcw } from "lucide-react";
+import { Sparkles, Copy, Check, ArrowRight, RotateCcw, Database, Music } from "lucide-react";
 import MoodRadar from "./MoodRadar";
 import TrackMatch from "./TrackMatch";
 import {
   GEMS_KEYS, GEMS_LABELS,
-  SAMPLE_TRACKS, buildPromptFromGems,
+  buildPromptFromGems,
   type GemsKey, type GemsTrack,
 } from "@/lib/gems-data";
 import { playTrackPreview, stopPreview } from "@/lib/track-preview-synth";
+import { useFmaTracks, getTrackAudioUrl } from "@/hooks/use-fma-tracks";
 import { toast } from "@/hooks/use-toast";
 
 interface MoodForgeExplorerProps {
@@ -30,6 +30,9 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
   const [hasInteracted, setHasInteracted] = useState(false);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const lastPlayedTrackRef = useRef<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const { tracks, loading, usingDb, trackCount } = useFmaTracks();
 
   const handleChange = useCallback((key: GemsKey, value: number) => {
     setHasInteracted(true);
@@ -40,7 +43,7 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
   const { nearestTrack, distance } = useMemo(() => {
     let best: GemsTrack | null = null;
     let bestDist = Infinity;
-    for (const track of SAMPLE_TRACKS) {
+    for (const track of tracks) {
       let dist = 0;
       for (const k of GEMS_KEYS) {
         const d = (track.gems[k] || 0) - (cursorValues[k] || 0);
@@ -53,36 +56,68 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
       }
     }
     return { nearestTrack: best, distance: bestDist };
-  }, [cursorValues]);
+  }, [cursorValues, tracks]);
+
+  // Stop any playing audio
+  const stopAllAudio = useCallback(() => {
+    stopPreview();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    setIsPreviewPlaying(false);
+  }, []);
+
+  // Play audio — use real MP3 if available, else synth
+  const playAudio = useCallback((track: GemsTrack) => {
+    stopAllAudio();
+    setIsPreviewPlaying(true);
+
+    const audioPath = (track as any).audioPath;
+    if (audioPath) {
+      // Stream real audio from storage
+      const url = getTrackAudioUrl(audioPath);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.volume = 0.5;
+      audio.play().catch(() => {
+        // Fallback to synth if streaming fails
+        playTrackPreview(track);
+      });
+      audio.onended = () => setIsPreviewPlaying(false);
+      audio.onerror = () => {
+        playTrackPreview(track);
+        const beatDur = 60 / (track.tempo || 100);
+        setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
+      };
+    } else {
+      // Synth preview
+      playTrackPreview(track);
+      const beatDur = 60 / (track.tempo || 100);
+      setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
+    }
+  }, [stopAllAudio]);
 
   // Auto-play preview when nearest track changes
   useEffect(() => {
     if (!hasInteracted || !nearestTrack) return;
     if (lastPlayedTrackRef.current === nearestTrack.id) return;
     lastPlayedTrackRef.current = nearestTrack.id;
-    setIsPreviewPlaying(true);
-    playTrackPreview(nearestTrack);
-    // Preview lasts ~8 beats, auto-stop state
-    const beatDur = 60 / (nearestTrack.tempo || 100);
-    const timeout = setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
-    return () => clearTimeout(timeout);
-  }, [nearestTrack?.id, hasInteracted]);
+    playAudio(nearestTrack);
+  }, [nearestTrack?.id, hasInteracted, playAudio]);
 
   // Cleanup on unmount
-  useEffect(() => () => stopPreview(), []);
+  useEffect(() => () => stopAllAudio(), [stopAllAudio]);
 
   const handlePlayPreview = useCallback(() => {
     if (!nearestTrack) return;
     if (isPreviewPlaying) {
-      stopPreview();
-      setIsPreviewPlaying(false);
+      stopAllAudio();
     } else {
-      setIsPreviewPlaying(true);
-      playTrackPreview(nearestTrack);
-      const beatDur = 60 / (nearestTrack.tempo || 100);
-      setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
+      playAudio(nearestTrack);
     }
-  }, [nearestTrack, isPreviewPlaying]);
+  }, [nearestTrack, isPreviewPlaying, stopAllAudio, playAudio]);
 
   const generatedPrompt = useMemo(
     () => buildPromptFromGems(cursorValues, nearestTrack, userDescription),
@@ -105,20 +140,19 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
   }, [onGenerateWithPrompt, generatedPrompt]);
 
   const handleReset = useCallback(() => {
+    stopAllAudio();
     setCursorValues(Object.fromEntries(GEMS_KEYS.map(k => [k, 0.5])) as Record<GemsKey, number>);
     setHasInteracted(false);
     setUserDescription("");
-  }, []);
+    lastPlayedTrackRef.current = null;
+  }, [stopAllAudio]);
 
   // Emotional summary
   const emotionalSummary = useMemo(() => {
     const high = GEMS_KEYS.filter(k => cursorValues[k] > 0.7);
-    const low = GEMS_KEYS.filter(k => cursorValues[k] < 0.3);
     if (!hasInteracted) return "Drag any dot to shape your sound";
-    const parts: string[] = [];
-    if (high.length) parts.push(high.map(k => GEMS_LABELS[k].toLowerCase()).join(", "));
-    if (parts.length === 0) return "Balanced emotional profile";
-    return parts.join(" · ");
+    if (high.length === 0) return "Balanced emotional profile";
+    return high.map(k => GEMS_LABELS[k].toLowerCase()).join(", ");
   }, [cursorValues, hasInteracted]);
 
   return (
@@ -130,6 +164,16 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
           <span className="text-sm font-bold text-foreground tracking-tight">MoodForge</span>
           <span className="text-[10px] text-muted-foreground px-2 py-0.5 rounded-full bg-muted/40 border border-border/50">
             GEMS 9
+          </span>
+          {/* Track source indicator */}
+          <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
+            {loading ? (
+              "Loading tracks..."
+            ) : usingDb ? (
+              <><Database size={10} /> {trackCount.toLocaleString()} tracks</>
+            ) : (
+              <><Music size={10} /> {trackCount} samples</>
+            )}
           </span>
         </div>
         <button
@@ -151,7 +195,6 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
               onDragEnd={() => {}}
             />
           </div>
-          {/* Emotional summary */}
           <AnimatePresence mode="wait">
             <motion.div
               key={emotionalSummary}
