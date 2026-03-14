@@ -21,6 +21,8 @@ export interface EditHistoryItem {
 
 export type VoiceState = "idle" | "recording" | "transcribing" | "parsing" | "done" | "error";
 
+export type ABMode = "original" | "edited";
+
 // Map stem IDs to their display properties
 export const STEM_COLOR_MAP: Record<string, { color: string; label: string }> = {
   drums: { color: "#3b82f6", label: "Drums" },
