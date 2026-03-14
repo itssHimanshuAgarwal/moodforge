@@ -128,14 +128,18 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
 
             {/* Stem lanes */}
             <div className="flex flex-col gap-4">
-              {stems.map((stem, i) => (
-                <div key={stem.id}>
-                  <StemLane stemId={stem.id} />
-                  {i < stems.length - 1 && (
-                    <div className="h-px bg-border/30 mt-4" />
-                  )}
-                </div>
-              ))}
+              {stems.map((stem, i) => {
+                const editTargetStem = editIntent ? (editIntent.target_stem || "").toLowerCase().trim() : null;
+                const isTarget = editTargetStem === stem.id;
+                return (
+                  <div key={stem.id}>
+                    <StemLane stemId={stem.id} isEditTarget={isTarget} />
+                    {i < stems.length - 1 && (
+                      <div className="h-px bg-border/30 mt-4" />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         )}
