@@ -1,6 +1,6 @@
 import { Plus, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
 import GenerateModal from "./GenerateModal";
 
@@ -14,9 +14,19 @@ const EmptyState = () => {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="flex-1 flex flex-col items-center justify-center p-12"
+        className="flex-1 flex flex-col items-center justify-center p-12 relative overflow-hidden"
       >
-        <div className="w-full max-w-md border-2 border-dashed border-foreground/10 rounded-xl p-12 flex flex-col items-center text-center">
+        {/* Animated gradient background */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(168,85,247,0.04) 50%, rgba(99,102,241,0.05) 100%)",
+            backgroundSize: "400% 400%",
+            animation: "gradientShift 12s ease infinite",
+          }}
+        />
+
+        <div className="relative w-full max-w-md border-2 border-dashed border-foreground/10 rounded-xl p-12 flex flex-col items-center text-center">
           <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-5 border border-primary/20">
             {isLoading ? (
               <Loader2 className="text-primary animate-spin" size={28} />
@@ -33,9 +43,10 @@ const EmptyState = () => {
           <button
             onClick={() => setShowModal(true)}
             disabled={isLoading}
-            className="px-5 py-2.5 bg-primary text-primary-foreground text-body font-semibold rounded-full hover:scale-105 transition-transform duration-150 active:scale-95 glow-indigo disabled:opacity-50 disabled:hover:scale-100"
+            className="group relative px-5 py-2.5 bg-primary text-primary-foreground text-body font-semibold rounded-full hover:scale-105 transition-transform duration-150 active:scale-95 glow-indigo disabled:opacity-50 disabled:hover:scale-100 overflow-hidden"
           >
-            Generate Track
+            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            <span className="relative">Generate Track</span>
           </button>
           <p className="text-[11px] text-muted-foreground/60 mt-3">
             or drag and drop an audio file
