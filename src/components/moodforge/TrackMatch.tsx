@@ -1,19 +1,22 @@
 /**
  * Shows the nearest matching track based on GEMS cursor position.
+ * Includes a play/stop button for audio preview.
  */
 import { motion, AnimatePresence } from "framer-motion";
-import { Music, Info } from "lucide-react";
+import { Music, Play, Square } from "lucide-react";
 import {
   GEMS_KEYS, GEMS_LABELS, GEMS_COLORS,
-  type GemsKey, type GemsTrack,
+  type GemsTrack,
 } from "@/lib/gems-data";
 
 interface TrackMatchProps {
   track: GemsTrack | null;
   distance: number;
+  isPlaying?: boolean;
+  onTogglePlay?: () => void;
 }
 
-export default function TrackMatch({ track, distance }: TrackMatchProps) {
+export default function TrackMatch({ track, distance, isPlaying, onTogglePlay }: TrackMatchProps) {
   if (!track) {
     return (
       <div className="p-4 text-center text-muted-foreground text-sm">
@@ -42,9 +45,17 @@ export default function TrackMatch({ track, distance }: TrackMatchProps) {
       >
         {/* Track info */}
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-            <Music size={18} className="text-primary" />
-          </div>
+          <button
+            onClick={onTogglePlay}
+            className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 hover:bg-primary/20 transition-colors"
+            title={isPlaying ? "Stop preview" : "Play preview"}
+          >
+            {isPlaying ? (
+              <Square size={14} className="text-primary" fill="currentColor" />
+            ) : (
+              <Play size={16} className="text-primary" fill="currentColor" />
+            )}
+          </button>
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-sm text-foreground truncate">{track.title}</div>
             <div className="text-xs text-muted-foreground truncate">
@@ -55,6 +66,27 @@ export default function TrackMatch({ track, distance }: TrackMatchProps) {
             <span className="text-[10px] font-bold text-primary">{matchPct}% match</span>
           </div>
         </div>
+
+        {/* Now playing indicator */}
+        {isPlaying && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 px-2 py-1 rounded-md bg-primary/5 border border-primary/10"
+          >
+            <div className="flex items-end gap-0.5 h-3">
+              {[1, 2, 3, 4].map(i => (
+                <motion.div
+                  key={i}
+                  className="w-0.5 bg-primary rounded-full"
+                  animate={{ height: ["4px", "12px", "4px"] }}
+                  transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] text-primary">Playing preview...</span>
+          </motion.div>
+        )}
 
         {/* GEMS bars */}
         <div className="space-y-1.5">

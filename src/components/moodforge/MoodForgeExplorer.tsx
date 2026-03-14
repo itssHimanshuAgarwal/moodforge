@@ -174,7 +174,12 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
                 Nearest Match
               </span>
             </div>
-            <TrackMatch track={hasInteracted ? nearestTrack : null} distance={distance} />
+            <TrackMatch
+              track={hasInteracted ? nearestTrack : null}
+              distance={distance}
+              isPlaying={isPreviewPlaying}
+              onTogglePlay={handlePlayPreview}
+            />
           </div>
 
           {/* Description input */}
