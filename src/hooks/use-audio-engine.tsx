@@ -229,7 +229,18 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     })();
   }, [getAudioContext]);
 
-  const loadDemo = useCallback(async () => {
+  // Auto-save session to IndexedDB when stems change
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isLoaded || !stems.some(s => s.versions.length > 0)) return;
+    // Debounce saves
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      persistCurrentSession(stems, generationPrompt);
+    }, 500);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [isLoaded, stems, generationPrompt, persistCurrentSession]);
+
     setIsLoading(true);
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
