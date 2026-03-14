@@ -70,10 +70,13 @@ const StemLane = ({ stemId, isEditTarget = false }: StemLaneProps) => {
           className={`flex-1 h-full rounded-md border relative overflow-hidden ${stem.bgClass} group-hover:brightness-125 transition-all duration-150 ${
             stem.isRegenerating
               ? "border-secondary/40 animate-pulse"
+              : isEditTarget
+              ? "border-2 shadow-lg"
               : stem.activeVersionIndex > 0
               ? "border-secondary/30 shadow-[0_0_10px_rgba(34,211,238,0.1)]"
               : "border-border"
           }`}
+          style={isEditTarget && !stem.isRegenerating ? { borderColor: stem.color, boxShadow: `0 0 12px ${stem.color}30` } : undefined}
         >
           {stem.isRegenerating ? (
             <div className="absolute inset-0 flex items-center justify-center gap-2">
