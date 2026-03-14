@@ -1,0 +1,202 @@
+/**
+ * MoodForge Explorer — GEMS 9 spider web + track matching + prompt generation.
+ * Users explore emotions visually, find matching reference tracks,
+ * then generate a prompt to feed into the Generate Track pipeline.
+ */
+import { useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Copy, Check, ArrowRight, RotateCcw } from "lucide-react";
+import MoodRadar from "./MoodRadar";
+import TrackMatch from "./TrackMatch";
+import {
+  GEMS_KEYS, GEMS_LABELS,
+  SAMPLE_TRACKS, buildPromptFromGems,
+  type GemsKey, type GemsTrack,
+} from "@/lib/gems-data";
+import { toast } from "@/hooks/use-toast";
+
+interface MoodForgeExplorerProps {
+  onGenerateWithPrompt: (prompt: string) => void;
+  isGenerating?: boolean;
+}
+
+export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }: MoodForgeExplorerProps) {
+  const [cursorValues, setCursorValues] = useState<Record<GemsKey, number>>(
+    () => Object.fromEntries(GEMS_KEYS.map(k => [k, 0.5])) as Record<GemsKey, number>
+  );
+  const [userDescription, setUserDescription] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  const handleChange = useCallback((key: GemsKey, value: number) => {
+    setHasInteracted(true);
+    setCursorValues(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  // Find nearest track in GEMS space
+  const { nearestTrack, distance } = useMemo(() => {
+    let best: GemsTrack | null = null;
+    let bestDist = Infinity;
+    for (const track of SAMPLE_TRACKS) {
+      let dist = 0;
+      for (const k of GEMS_KEYS) {
+        const d = (track.gems[k] || 0) - (cursorValues[k] || 0);
+        dist += d * d;
+      }
+      dist = Math.sqrt(dist / GEMS_KEYS.length);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = track;
+      }
+    }
+    return { nearestTrack: best, distance: bestDist };
+  }, [cursorValues]);
+
+  const generatedPrompt = useMemo(
+    () => buildPromptFromGems(cursorValues, nearestTrack, userDescription),
+    [cursorValues, nearestTrack, userDescription]
+  );
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(generatedPrompt);
+      setCopied(true);
+      toast({ title: "Prompt copied!" });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "Couldn't copy", variant: "destructive" });
+    }
+  }, [generatedPrompt]);
+
+  const handleGenerate = useCallback(() => {
+    onGenerateWithPrompt(generatedPrompt);
+  }, [onGenerateWithPrompt, generatedPrompt]);
+
+  const handleReset = useCallback(() => {
+    setCursorValues(Object.fromEntries(GEMS_KEYS.map(k => [k, 0.5])) as Record<GemsKey, number>);
+    setHasInteracted(false);
+    setUserDescription("");
+  }, []);
+
+  // Emotional summary
+  const emotionalSummary = useMemo(() => {
+    const high = GEMS_KEYS.filter(k => cursorValues[k] > 0.7);
+    const low = GEMS_KEYS.filter(k => cursorValues[k] < 0.3);
+    if (!hasInteracted) return "Drag any dot to shape your sound";
+    const parts: string[] = [];
+    if (high.length) parts.push(high.map(k => GEMS_LABELS[k].toLowerCase()).join(", "));
+    if (parts.length === 0) return "Balanced emotional profile";
+    return parts.join(" · ");
+  }, [cursorValues, hasInteracted]);
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+        <div className="flex items-center gap-2">
+          <Sparkles size={16} className="text-primary" />
+          <span className="text-sm font-bold text-foreground tracking-tight">MoodForge</span>
+          <span className="text-[10px] text-muted-foreground px-2 py-0.5 rounded-full bg-muted/40 border border-border/50">
+            GEMS 9
+          </span>
+        </div>
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <RotateCcw size={12} />
+          Reset
+        </button>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Radar */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4 min-w-0">
+          <div className="w-full max-w-[480px]">
+            <MoodRadar
+              values={cursorValues}
+              onChange={handleChange}
+              onDragEnd={() => {}}
+            />
+          </div>
+          {/* Emotional summary */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={emotionalSummary}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="mt-2 text-xs text-muted-foreground text-center max-w-xs"
+            >
+              {emotionalSummary}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Right: Match + Prompt */}
+        <div className="w-[320px] border-l border-border flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+          {/* Track match */}
+          <div className="border-b border-border">
+            <div className="px-4 pt-3 pb-1">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                Nearest Match
+              </span>
+            </div>
+            <TrackMatch track={hasInteracted ? nearestTrack : null} distance={distance} />
+          </div>
+
+          {/* Description input */}
+          <div className="p-4 border-b border-border">
+            <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-2 block">
+              Your Description (optional)
+            </label>
+            <textarea
+              value={userDescription}
+              onChange={e => setUserDescription(e.target.value)}
+              rows={2}
+              placeholder="e.g. a dreamy lo-fi beat for studying"
+              className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 transition-colors resize-none"
+            />
+          </div>
+
+          {/* Generated prompt */}
+          <div className="p-4 flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                Generated Prompt
+              </span>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {copied ? <Check size={10} /> : <Copy size={10} />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <div className="bg-muted/20 border border-border/50 rounded-lg p-3 text-[11px] text-foreground/70 leading-relaxed whitespace-pre-wrap max-h-[200px] overflow-y-auto custom-scrollbar">
+              {generatedPrompt || "Drag the emotional dimensions to generate a prompt..."}
+            </div>
+          </div>
+
+          {/* Generate button */}
+          <div className="p-4 border-t border-border shrink-0">
+            <button
+              onClick={handleGenerate}
+              disabled={!hasInteracted || isGenerating}
+              className="w-full group relative flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground text-sm font-semibold rounded-xl hover:scale-[1.02] transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100 overflow-hidden"
+            >
+              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <span className="relative flex items-center gap-2">
+                {isGenerating ? "Generating..." : "Generate Track"}
+                {!isGenerating && <ArrowRight size={14} />}
+              </span>
+            </button>
+            <p className="text-[10px] text-muted-foreground/50 text-center mt-2">
+              Uses the emotional profile to create your track
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
