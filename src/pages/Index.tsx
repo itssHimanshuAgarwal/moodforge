@@ -152,6 +152,17 @@ const IndexContent = () => {
     onDismissEdit: handleRetryEdit,
   });
 
+  // Handle vibe slider changes → feed into same edit pipeline as text/voice
+  const handleVibeChange = useCallback(async (instruction: string, affectedStems: string[]) => {
+    if (!isLoaded) return;
+    // Use the first affected stem as the primary target
+    const primaryStem = affectedStems[0] || "full_mix";
+    
+    // Submit the instruction through the text pipeline
+    reset();
+    submitText(instruction);
+  }, [isLoaded, reset, submitText]);
+
   const showIntent = voiceState === "done" ? intent : null;
   const showTranscript = voiceState === "done" ? transcript : null;
 
@@ -165,6 +176,7 @@ const IndexContent = () => {
             editTranscript={showTranscript}
             onApplyEdit={handleApplyEdit}
             onRetryEdit={handleRetryEdit}
+            onVibeChange={handleVibeChange}
           />
         </div>
         <div className="w-[30%]">

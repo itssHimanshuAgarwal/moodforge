@@ -4,6 +4,8 @@ import StemLane from "./StemLane";
 import EmptyState from "./EmptyState";
 import WaveformDisplay from "./WaveformDisplay";
 import EditCard from "./EditCard";
+import ViewToggle, { type ViewMode } from "./ViewToggle";
+import VibesView from "./VibesView";
 import { useAudioEngine } from "@/hooks/use-audio-engine";
 import type { EditIntent } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
@@ -13,12 +15,14 @@ interface MainStageProps {
   editTranscript: string | null;
   onApplyEdit: () => void;
   onRetryEdit: () => void;
+  onVibeChange?: (instruction: string, affectedStems: string[]) => void;
 }
 
-const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: MainStageProps) => {
+const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit, onVibeChange }: MainStageProps) => {
   const { isLoaded, stems, currentTime, duration, isPlaying, seek, loadFromBlob, getActiveBlob } = useAudioEngine();
   const mainBlob = getActiveBlob(stems[0] ?? null as any);
   const [isDragging, setIsDragging] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("stems");
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -43,6 +47,10 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
     return `${s.label} v${v?.versionNumber ?? 1}`;
   });
   const hasMultipleVersionsAnywhere = stems.some(s => s.versions.length > 1);
+
+  const handleVibeChange = useCallback((instruction: string, affectedStems: string[]) => {
+    onVibeChange?.(instruction, affectedStems);
+  }, [onVibeChange]);
 
   return (
     <section
@@ -79,17 +87,20 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
             transition={{ duration: 0.4 }}
             className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-8 gap-4"
           >
-            {/* Version summary bar */}
-            {hasMultipleVersionsAnywhere && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted/30 border border-border/50">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Playing:</span>
-                {versionSummary.map((text, i) => (
-                  <span key={i} className="text-[10px] font-mono text-foreground/60">
-                    {text}{i < versionSummary.length - 1 && <span className="text-muted-foreground/40 mx-1">·</span>}
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* View toggle + version summary */}
+            <div className="flex items-center justify-between">
+              <ViewToggle mode={viewMode} onChange={setViewMode} />
+              {hasMultipleVersionsAnywhere && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted/30 border border-border/50">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Playing:</span>
+                  {versionSummary.map((text, i) => (
+                    <span key={i} className="text-[10px] font-mono text-foreground/60">
+                      {text}{i < versionSummary.length - 1 && <span className="text-muted-foreground/40 mx-1">·</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Main waveform */}
             <div className="w-full panel-surface rounded-lg relative overflow-hidden shrink-0">
@@ -126,21 +137,47 @@ const MainStage = ({ editIntent, editTranscript, onApplyEdit, onRetryEdit }: Mai
               </div>
             </div>
 
-            {/* Stem lanes */}
-            <div className="flex flex-col gap-4">
-              {stems.map((stem, i) => {
-                const editTargetStem = editIntent ? (editIntent.target_stem || "").toLowerCase().trim() : null;
-                const isTarget = editTargetStem === stem.id;
-                return (
-                  <div key={stem.id}>
-                    <StemLane stemId={stem.id} isEditTarget={isTarget} />
-                    {i < stems.length - 1 && (
-                      <div className="h-px bg-border/30 mt-4" />
-                    )}
+            {/* Stems vs Vibes view */}
+            <AnimatePresence mode="wait">
+              {viewMode === "stems" ? (
+                <motion.div
+                  key="stems-view"
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex flex-col gap-4"
+                >
+                  {stems.map((stem, i) => {
+                    const editTargetStem = editIntent ? (editIntent.target_stem || "").toLowerCase().trim() : null;
+                    const isTarget = editTargetStem === stem.id;
+                    return (
+                      <div key={stem.id}>
+                        <StemLane stemId={stem.id} isEditTarget={isTarget} />
+                        {i < stems.length - 1 && (
+                          <div className="h-px bg-border/30 mt-4" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="vibes-view"
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 16 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <div className="panel-surface rounded-lg">
+                    <VibesView
+                      onVibeChange={handleVibeChange}
+                      disabled={stems.some(s => s.isRegenerating)}
+                    />
                   </div>
-                );
-              })}
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
