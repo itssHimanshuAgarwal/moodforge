@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fma_tracks: {
+        Row: {
+          arousal: number
+          artist: string
+          audio_path: string | null
+          created_at: string
+          fma_track_id: string
+          gems_sadness: number
+          genre: string
+          id: string
+          joyful_activation: number
+          key: string
+          mode: string
+          nostalgia: number
+          peacefulness: number
+          power: number
+          prompt_fragment: string
+          tempo: number
+          tenderness: number
+          tension: number
+          title: string
+          transcendence: number
+          valence: number
+          wonder: number
+        }
+        Insert: {
+          arousal?: number
+          artist?: string
+          audio_path?: string | null
+          created_at?: string
+          fma_track_id: string
+          gems_sadness?: number
+          genre?: string
+          id?: string
+          joyful_activation?: number
+          key?: string
+          mode?: string
+          nostalgia?: number
+          peacefulness?: number
+          power?: number
+          prompt_fragment?: string
+          tempo?: number
+          tenderness?: number
+          tension?: number
+          title?: string
+          transcendence?: number
+          valence?: number
+          wonder?: number
+        }
+        Update: {
+          arousal?: number
+          artist?: string
+          audio_path?: string | null
+          created_at?: string
+          fma_track_id?: string
+          gems_sadness?: number
+          genre?: string
+          id?: string
+          joyful_activation?: number
+          key?: string
+          mode?: string
+          nostalgia?: number
+          peacefulness?: number
+          power?: number
+          prompt_fragment?: string
+          tempo?: number
+          tenderness?: number
+          tension?: number
+          title?: string
+          transcendence?: number
+          valence?: number
+          wonder?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
