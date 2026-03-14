@@ -295,10 +295,35 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, [getAudioContext, setupStems]);
 
+  const [demoMode, setDemoMode] = useState(true); // Demo mode: use local synth instead of API
+
   const generateTrack = useCallback(async (prompt: string) => {
     setIsLoading(true);
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
+
+    if (demoMode) {
+      // Demo mode: generate stems locally with cosmetic delay
+      const stemResults: Array<{
+        id: string; label: string; color: string; bgClass: string;
+        buffer: AudioBuffer; blob: Blob;
+      }> = [];
+
+      for (let i = 0; i < STEM_CONFIGS.length; i++) {
+        const config = STEM_CONFIGS[i];
+        setGenerationProgress(`Generating ${config.label} (${i + 1}/${STEM_CONFIGS.length})...`);
+        await wait(800 + Math.random() * 400); // Short cosmetic delay per stem
+        const buffer = generateDemoBuffer(ctx, config);
+        const blob = audioBufferToBlob(buffer);
+        stemResults.push({ id: config.id, label: config.label, color: config.color, bgClass: config.bgClass, buffer, blob });
+      }
+
+      setGenerationProgress(null);
+      setupStems(stemResults);
+      setGenerationPrompt(prompt);
+      setIsLoading(false);
+      return;
+    }
 
     const fetchStem = async (config: typeof STEM_CONFIGS[number]) => {
       let attempt = 0;
@@ -379,7 +404,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [getAudioContext, setupStems]);
+  }, [getAudioContext, setupStems, demoMode]);
 
   const regenerateStem = useCallback(async (stemId: string, prompt: string, userFeedback?: string) => {
     setStems((prev) =>
