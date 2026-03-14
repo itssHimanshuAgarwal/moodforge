@@ -165,16 +165,48 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     const ctx = getAudioContext();
     if (ctx.state === "suspended") await ctx.resume();
-    // Simulate generation delay for demo feel
-    await new Promise((r) => setTimeout(r, 3000));
-    const stemData = STEM_CONFIGS.map((config) => {
-      const buffer = generateDemoBuffer(ctx, config);
-      const blob = audioBufferToBlob(buffer);
-      return { id: config.id, label: config.label, color: config.color, bgClass: config.bgClass, buffer, blob };
-    });
-    setupStems(stemData);
-    setGenerationPrompt(prompt);
-    setIsLoading(false);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-music`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ prompt, duration_seconds: 30 }),
+        }
+      );
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errData.error || `HTTP ${response.status}`);
+      }
+
+      const audioArrayBuf = await response.arrayBuffer();
+      const fullBlob = new Blob([audioArrayBuf], { type: "audio/mpeg" });
+      const fullBuffer = await ctx.decodeAudioData(audioArrayBuf.slice(0));
+
+      // Create stem placeholders from the full mix buffer
+      const stemData = STEM_CONFIGS.map((config) => ({
+        id: config.id,
+        label: config.label,
+        color: config.color,
+        bgClass: config.bgClass,
+        buffer: fullBuffer,
+        blob: fullBlob,
+      }));
+
+      setupStems(stemData);
+      setGenerationPrompt(prompt);
+    } catch (err) {
+      console.error("Track generation failed:", err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   }, [getAudioContext, setupStems]);
 
   const regenerateStem = useCallback(async (stemId: string, prompt: string, userFeedback?: string) => {
