@@ -55,6 +55,35 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
     return { nearestTrack: best, distance: bestDist };
   }, [cursorValues]);
 
+  // Auto-play preview when nearest track changes
+  useEffect(() => {
+    if (!hasInteracted || !nearestTrack) return;
+    if (lastPlayedTrackRef.current === nearestTrack.id) return;
+    lastPlayedTrackRef.current = nearestTrack.id;
+    setIsPreviewPlaying(true);
+    playTrackPreview(nearestTrack);
+    // Preview lasts ~8 beats, auto-stop state
+    const beatDur = 60 / (nearestTrack.tempo || 100);
+    const timeout = setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
+    return () => clearTimeout(timeout);
+  }, [nearestTrack?.id, hasInteracted]);
+
+  // Cleanup on unmount
+  useEffect(() => () => stopPreview(), []);
+
+  const handlePlayPreview = useCallback(() => {
+    if (!nearestTrack) return;
+    if (isPreviewPlaying) {
+      stopPreview();
+      setIsPreviewPlaying(false);
+    } else {
+      setIsPreviewPlaying(true);
+      playTrackPreview(nearestTrack);
+      const beatDur = 60 / (nearestTrack.tempo || 100);
+      setTimeout(() => setIsPreviewPlaying(false), beatDur * 8 * 1000 + 500);
+    }
+  }, [nearestTrack, isPreviewPlaying]);
+
   const generatedPrompt = useMemo(
     () => buildPromptFromGems(cursorValues, nearestTrack, userDescription),
     [cursorValues, nearestTrack, userDescription]
