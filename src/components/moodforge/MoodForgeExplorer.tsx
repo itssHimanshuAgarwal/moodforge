@@ -28,6 +28,8 @@ export default function MoodForgeExplorer({ onGenerateWithPrompt, isGenerating }
   const [userDescription, setUserDescription] = useState("");
   const [copied, setCopied] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const lastPlayedTrackRef = useRef<string | null>(null);
 
   const handleChange = useCallback((key: GemsKey, value: number) => {
     setHasInteracted(true);
