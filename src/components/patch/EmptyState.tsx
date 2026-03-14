@@ -359,9 +359,9 @@ const EmptyState = () => {
               disabled={isLoading}
               className="transition-all duration-200 disabled:opacity-50"
               style={{
-                background: "transparent",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "rgba(255,255,255,0.65)",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                color: "rgba(255,255,255,0.75)",
                 padding: "13px 32px",
                 borderRadius: 10,
                 fontWeight: 600,
