@@ -613,7 +613,6 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
       value={{
         isLoaded, isPlaying, isLoading, currentTime, duration, stems,
         generationPrompt, generationProgress, hasSavedSession, savedSessionPrompt,
-        demoMode, setDemoMode,
         loadDemo, loadFromBlob, generateTrack, regenerateStem,
         restoreSession, clearSavedSession,
         play, pause, togglePlayPause, seek, skipForward, skipBack,
