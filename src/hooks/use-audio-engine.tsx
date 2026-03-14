@@ -14,6 +14,7 @@ import {
 import type { StemVersion } from "@/lib/types";
 import { AudioEngineContext } from "./audio-engine-context";
 import type { AudioEngineContextValue } from "./audio-engine-context";
+import { saveSession, loadSession, type StoredSession } from "@/lib/session-store";
 
 const MAX_VERSIONS = 10;
 
@@ -64,6 +65,7 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
   const animFrameRef = useRef(0);
+  const hasRestoredRef = useRef(false);
 
   const getAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -135,6 +137,109 @@ export function AudioEngineProvider({ children }: { children: ReactNode }) {
     offsetRef.current = 0;
     setIsLoaded(true);
   }, [getAudioContext]);
+
+  // Persist current session to IndexedDB
+  const persistCurrentSession = useCallback((currentStems: StemState[], prompt: string | null) => {
+    const storedStems = currentStems.map(s => ({
+      id: s.id,
+      label: s.label,
+      color: s.color,
+      bgClass: s.bgClass,
+      versions: s.versions.map(v => ({
+        id: v.id,
+        versionNumber: v.versionNumber,
+        label: v.label,
+        blob: v.blob,
+        prompt: v.prompt,
+        userFeedback: v.userFeedback,
+        timestamp: v.timestamp,
+      })),
+      activeVersionIndex: s.activeVersionIndex,
+    }));
+    saveSession({ generationPrompt: prompt, stems: storedStems, savedAt: Date.now() });
+  }, []);
+
+  // Restore session from IndexedDB on mount
+  useEffect(() => {
+    if (hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
+
+    (async () => {
+      const session = await loadSession();
+      if (!session || !session.stems.length) return;
+
+      setIsLoading(true);
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === "suspended") await ctx.resume();
+
+        const restoredStems: StemState[] = [];
+        for (const stored of session.stems) {
+          let gainNode = gainNodesRef.current.get(stored.id);
+          if (!gainNode) {
+            gainNode = ctx.createGain();
+            gainNode.connect(ctx.destination);
+            gainNodesRef.current.set(stored.id, gainNode);
+          }
+
+          const versions: StemVersion[] = [];
+          for (const sv of stored.versions) {
+            const arrayBuf = await sv.blob.arrayBuffer();
+            const buffer = await ctx.decodeAudioData(arrayBuf);
+            versions.push({
+              id: sv.id,
+              versionNumber: sv.versionNumber,
+              label: sv.label,
+              buffer,
+              blob: sv.blob,
+              prompt: sv.prompt,
+              userFeedback: sv.userFeedback,
+              timestamp: sv.timestamp,
+            });
+          }
+
+          restoredStems.push({
+            id: stored.id,
+            label: stored.label,
+            color: stored.color,
+            bgClass: stored.bgClass,
+            isSolo: false,
+            isMuted: false,
+            isLocked: false,
+            versions,
+            activeVersionIndex: stored.activeVersionIndex,
+            isRegenerating: false,
+          });
+        }
+
+        if (restoredStems.length && restoredStems[0].versions.length) {
+          setStems(restoredStems);
+          setDuration(restoredStems[0].versions[restoredStems[0].activeVersionIndex]?.buffer?.duration || 0);
+          setCurrentTime(0);
+          offsetRef.current = 0;
+          setGenerationPrompt(session.generationPrompt);
+          setIsLoaded(true);
+          console.log("Session restored from IndexedDB");
+        }
+      } catch (err) {
+        console.warn("Failed to restore session:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [getAudioContext]);
+
+  // Auto-save session to IndexedDB when stems change
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isLoaded || !stems.some(s => s.versions.length > 0)) return;
+    // Debounce saves
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      persistCurrentSession(stems, generationPrompt);
+    }, 500);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [isLoaded, stems, generationPrompt, persistCurrentSession]);
 
   const loadDemo = useCallback(async () => {
     setIsLoading(true);
