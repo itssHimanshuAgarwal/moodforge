@@ -3,7 +3,7 @@ import TopBar from "@/components/patch/TopBar";
 import MainStage from "@/components/patch/MainStage";
 import HistoryPanel from "@/components/patch/HistoryPanel";
 import TransportBar from "@/components/patch/TransportBar";
-import { AudioEngineProvider, useAudioEngine } from "@/hooks/use-audio-engine";
+import { useAudioEngine } from "@/hooks/use-audio-engine";
 import { useVoiceFeedback } from "@/hooks/use-voice-feedback";
 import { useKeyboardShortcuts, ShortcutsHint } from "@/components/patch/KeyboardShortcuts";
 import { playClick, playChime, playPop } from "@/lib/ui-sounds";
