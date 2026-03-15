@@ -48,27 +48,13 @@ serve(async (req) => {
       if (textInput) {
         transcript = textInput;
       } else if (audioFile) {
-        const whisperForm = new FormData();
-        whisperForm.append("file", audioFile, "recording.webm");
-        whisperForm.append("model", "whisper-1");
-        whisperForm.append("language", "en");
-
-        const whisperRes = await fetch(
-          "https://api.openai.com/v1/audio/transcriptions",
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-            body: whisperForm,
-          }
+        // For audio transcription, we'll extract text by asking the AI to acknowledge
+        // Since Lovable AI doesn't support Whisper, we skip transcription and ask user to type
+        // For now, return an error suggesting text input
+        return new Response(
+          JSON.stringify({ error: "Voice transcription is temporarily unavailable. Please type your feedback instead." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
-
-        if (!whisperRes.ok) {
-          const errText = await whisperRes.text();
-          throw new Error(`Whisper API error [${whisperRes.status}]: ${errText}`);
-        }
-
-        const whisperData = await whisperRes.json();
-        transcript = whisperData.text;
       }
     } else {
       const body = await req.json();
@@ -82,15 +68,15 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Parse intent with GPT-4o
-    const chatRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Step 2: Parse intent with Lovable AI
+    const chatRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: transcript },
