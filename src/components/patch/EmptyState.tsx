@@ -103,10 +103,7 @@ const RotatingHeadline = ({ startDelay }: { startDelay: number }) => {
 
 /* ── Radar background ── */
 const SPOKE_COUNT = 9;
-const DOT_COLORS = [
-  "#fbbf24", "#8b5cf6", "#ec4899", "#f59e0b", "#22d3ee",
-  "#84cc16", "#ef4444", "#f97316", "#6366f1",
-];
+const DOT_COLORS = ["#fbbf24", "#8b5cf6", "#ec4899", "#f59e0b", "#22d3ee", "#84cc16", "#ef4444", "#f97316", "#6366f1"];
 
 interface RadarDot {
   angle: number;
@@ -144,15 +141,7 @@ const RadarBackground = () => {
       <svg width={R * 2} height={R * 2} viewBox={`0 0 ${R * 2} ${R * 2}`} className="absolute">
         {/* Concentric circles */}
         {[0.33, 0.66, 1].map((pct) => (
-          <circle
-            key={pct}
-            cx={R}
-            cy={R}
-            r={R * pct}
-            fill="none"
-            stroke="rgba(120,80,255,0.04)"
-            strokeWidth={1}
-          />
+          <circle key={pct} cx={R} cy={R} r={R * pct} fill="none" stroke="rgba(120,80,255,0.04)" strokeWidth={1} />
         ))}
         {/* Spokes */}
         {dots.map((d, i) => {
@@ -203,17 +192,7 @@ const RadarBackground = () => {
 };
 
 /* ── Step indicator ── */
-const Step = ({
-  icon,
-  label,
-  text,
-  delay,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  text: string;
-  delay: number;
-}) => (
+const Step = ({ icon, label, text, delay }: { icon: React.ReactNode; label: string; text: string; delay: number }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -253,7 +232,7 @@ const EmptyState = () => {
             className="font-display"
             style={{ fontSize: 52, fontWeight: 600, color: "#fff", lineHeight: 1.1 }}
           >
-            You know the sound.
+            Feel it first.
           </motion.h1>
 
           <RotatingHeadline startDelay={line2Delay} />
@@ -337,9 +316,7 @@ const EmptyState = () => {
             transition={{ delay: stepsDelay + 0.6 }}
             className="flex flex-col items-center gap-1.5 mt-5"
           >
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>
-              or drag and drop an audio file
-            </span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>or drag and drop an audio file</span>
             <button
               onClick={loadDemo}
               disabled={isLoading}
@@ -376,13 +353,9 @@ const EmptyState = () => {
             textTransform: "uppercase" as const,
           }}
         >
-          9 GEMS Dimensions{" "}
-          <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>{" "}
-          60+ Neuroscience Metrics{" "}
-          <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>{" "}
-          8,000 Analyzed Tracks{" "}
-          <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>{" "}
-          4 Research Papers
+          9 GEMS Dimensions <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span> 60+ Neuroscience Metrics{" "}
+          <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span> 8,000 Analyzed Tracks{" "}
+          <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span> 4 Research Papers
         </motion.div>
       </div>
 
