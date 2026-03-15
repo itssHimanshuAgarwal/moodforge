@@ -357,7 +357,7 @@ const EmptyState = () => {
             <button
               onClick={() => navigate("/discover")}
               disabled={isLoading}
-              className="transition-all duration-200 disabled:opacity-50 bg-white/5 border border-white/15 text-white/80 px-8 py-3.5 rounded-[10px] font-semibold text-[15px] hover:border-purple-500/40 hover:text-white"
+              className="transition-all duration-200 disabled:opacity-50 bg-white text-black px-8 py-3.5 rounded-[10px] font-semibold text-[15px] hover:bg-white/90"
               style={{
                 cursor: isLoading ? "not-allowed" : "pointer",
               }}
