@@ -20,7 +20,7 @@ We call this the **intent articulation gap** — you know what you want when you
 
 ### 1. Discover
 
-An interactive emotional radar based on the **GEMS framework** (Geneva Emotional Music Scale) — 9 scientifically validated dimensions. Drag dots for Wonder, Transcendence, Tenderness, Nostalgia, Peacefulness, Joy, Power, Tension, and Sadness. The system searches 8,000 analyzed tracks and plays the closest match in real time.
+An interactive emotional radar based on the **GEMS framework** (Geneva Emotional Music Scale) - 9 scientifically validated dimensions. Drag dots for Wonder, Transcendence, Tenderness, Nostalgia, Peacefulness, Joy, Power, Tension, and Sadness. The system searches 8,000 analyzed tracks and plays the closest match in real time.
 
 When you find what you want, the system generates a detailed prompt — tempo, key, timbre, texture, emotional targets.
 
@@ -97,11 +97,6 @@ To configure:
 
 There are several ways of editing your application.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
 
 **Use your preferred IDE**
 
@@ -153,11 +148,6 @@ This project is built with:
 
 ---
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
----
 
 ## Can I connect a custom domain to my Lovable project?
 
