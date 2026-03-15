@@ -311,49 +311,13 @@ const EmptyState = () => {
             />
           </div>
 
-          {/* Action buttons */}
+          {/* Action button */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut", delay: stepsDelay + 0.5 }}
             className="flex items-center gap-3 mt-7"
           >
-            <button
-              onClick={() => setShowModal(true)}
-              disabled={isLoading}
-              className="relative overflow-hidden transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
-              style={{
-                background: "linear-gradient(135deg, #7c3aed, #22d3ee)",
-                color: "#fff",
-                padding: "13px 32px",
-                borderRadius: 10,
-                fontWeight: 600,
-                fontSize: 15,
-                border: "none",
-                boxShadow: "0 4px 20px rgba(120,80,255,0.2)",
-                cursor: isLoading ? "not-allowed" : "pointer",
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.filter = "brightness(1.1)";
-                  e.currentTarget.style.transform = "scale(1.02)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.filter = "";
-                e.currentTarget.style.transform = "";
-              }}
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 size={16} className="animate-spin" />
-                  Generating...
-                </span>
-              ) : (
-                "Generate Track"
-              )}
-            </button>
-
             <button
               onClick={() => navigate("/discover")}
               disabled={isLoading}
