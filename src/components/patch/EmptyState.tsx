@@ -249,7 +249,7 @@ const EmptyState = () => {
               marginTop: 16,
             }}
           >
-            Navigate by emotion. Generate with AI. Edit by voice.
+            Find it faster.
           </motion.p>
 
           {/* Steps */}
