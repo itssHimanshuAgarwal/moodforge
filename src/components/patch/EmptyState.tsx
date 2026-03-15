@@ -6,12 +6,7 @@ import { Crosshair, Music, Mic, Loader2, ArrowRight } from "lucide-react";
 import GenerateModal from "./GenerateModal";
 
 /* ── Rotating typewriter headline ── */
-const ROTATING_PHRASES = [
-  "Find it faster.",
-  "Navigate it by emotion.",
-  "Edit it with your voice.",
-  "Shape it into yours.",
-];
+const ROTATING_PHRASES = ["Find it faster.", "Stay in flow.", "Shape it into yours."];
 
 const CHAR_DELAY = 40;
 const HOLD_DURATION = 2500;
