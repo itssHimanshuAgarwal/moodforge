@@ -357,26 +357,9 @@ const EmptyState = () => {
             <button
               onClick={() => navigate("/discover")}
               disabled={isLoading}
-              className="transition-all duration-200 disabled:opacity-50"
+              className="transition-all duration-200 disabled:opacity-50 bg-white/5 border border-white/15 text-white/80 px-8 py-3.5 rounded-[10px] font-semibold text-[15px] hover:border-purple-500/40 hover:text-white"
               style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: "rgba(255,255,255,0.75)",
-                padding: "13px 32px",
-                borderRadius: 10,
-                fontWeight: 600,
-                fontSize: 15,
                 cursor: isLoading ? "not-allowed" : "pointer",
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.borderColor = "rgba(120,80,255,0.4)";
-                  e.currentTarget.style.color = "#fff";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
-                e.currentTarget.style.color = "rgba(255,255,255,0.65)";
               }}
             >
               Discover Vibes
