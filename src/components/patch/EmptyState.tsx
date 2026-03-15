@@ -247,7 +247,9 @@ const EmptyState = () => {
               fontWeight: 400,
               marginTop: 16,
             }}
-          ></motion.p>
+          >
+            Find it faster.
+          </motion.p>
 
           {/* Steps */}
           <div className="flex items-center gap-0 mt-9">
