@@ -1,16 +1,20 @@
 # MoodForge
 
-**You know the sound. You just can't say it.**
+**Every AI music tool looks the same: a text box. Type what you want..**
 
-MoodForge lets you discover music through emotion, generate it with AI, and edit it by voice.
+Get a song. Don’t like it? Type again.  But before words, we only had music. 
 
 ---
 
 ## The Problem
 
-Every AI music tool has the same interface: a text box. Type what you want. Get a song. Don't like it? Type again.
+But what if you don’t know how to describe the feeling you want to create?
 
-People don't think about music in words. They think in feelings. When forced to describe sound in a prompt, they fail. Creators spend 4-5 hours editing after generation. The average user regenerates 5-10 times per project hoping something lands.
+Music is not language-first.
+Music is emotion-first.
+
+Humans don’t think about music in words, we experience it through sensation, mood, and memory.
+When we’re forced to translate a feeling into a prompt, something gets lost.
 
 We call this the **intent articulation gap**, you know what you want when you hear it, but you can't describe it in words.
 
