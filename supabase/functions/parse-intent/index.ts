@@ -88,7 +88,7 @@ serve(async (req) => {
 
     if (!chatRes.ok) {
       const errText = await chatRes.text();
-      throw new Error(`GPT-4o API error [${chatRes.status}]: ${errText}`);
+      throw new Error(`AI API error [${chatRes.status}]: ${errText}`);
     }
 
     const chatData = await chatRes.json();
