@@ -12,7 +12,7 @@ Every AI music tool has the same interface: a text box. Type what you want. Get 
 
 People don't think about music in words. They think in feelings. When forced to describe sound in a prompt, they fail. Creators spend 4-5 hours editing after generation. The average user regenerates 5-10 times per project hoping something lands.
 
-We call this the **intent articulation gap** — you know what you want when you hear it, but you can't describe it in words.
+We call this the **intent articulation gap**, you know what you want when you hear it, but you can't describe it in words.
 
 ---
 
@@ -20,9 +20,9 @@ We call this the **intent articulation gap** — you know what you want when you
 
 ### 1. Discover
 
-An interactive emotional radar based on the **GEMS framework** (Geneva Emotional Music Scale) - 9 scientifically validated dimensions. Drag dots for Wonder, Transcendence, Tenderness, Nostalgia, Peacefulness, Joy, Power, Tension, and Sadness. The system searches 8,000 analyzed tracks and plays the closest match in real time.
+An interactive emotional radar based on the **GEMS framework** (Geneva Emotional Music Scale): 9 scientifically validated dimensions. Drag dots for Wonder, Transcendence, Tenderness, Nostalgia, Peacefulness, Joy, Power, Tension, and Sadness. The system searches 8,000 analyzed tracks and plays the closest match in real time.
 
-When you find what you want, the system generates a detailed prompt — tempo, key, timbre, texture, emotional targets.
+When you find what you want, the system generates a detailed prompt: tempo, key, timbre, texture, emotional targets.
 
 ### 2. Generate
 
@@ -75,7 +75,7 @@ To configure:
 2. Get your API keys from their respective dashboards
 3. Add them to your environment or deploy environment configuration
 
-**Note:** These keys are accessed via `Deno.env.get()` in edge functions — they are never hardcoded in the source code.
+**Note:** These keys are accessed via `Deno.env.get()` in edge functions, they are never hardcoded in the source code.
 
 ---
 
@@ -100,7 +100,7 @@ There are several ways of editing your application.
 
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -148,11 +148,3 @@ This project is built with:
 
 ---
 
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
