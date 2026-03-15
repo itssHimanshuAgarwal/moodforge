@@ -7,8 +7,7 @@ import GenerateModal from "./GenerateModal";
 
 /* ── Rotating typewriter headline ── */
 const ROTATING_PHRASES = [
-  "You just can't say it.",
-  "Feel it instead.",
+  "Find it faster.",
   "Navigate it by emotion.",
   "Edit it with your voice.",
   "Shape it into yours.",
@@ -248,9 +247,7 @@ const EmptyState = () => {
               fontWeight: 400,
               marginTop: 16,
             }}
-          >
-            Find it faster.
-          </motion.p>
+          ></motion.p>
 
           {/* Steps */}
           <div className="flex items-center gap-0 mt-9">
