@@ -243,7 +243,7 @@ const EmptyState = () => {
               marginTop: 16,
             }}
           >
-            Find it faster.
+            .
           </motion.p>
 
           {/* Steps */}
